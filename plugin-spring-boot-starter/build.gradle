@@ -1,0 +1,33 @@
+plugins {
+    id "org.springframework.boot"
+    id "io.spring.dependency-management"
+    id 'java'
+}
+
+group 'xyz.guqing'
+version '1.0-SNAPSHOT'
+
+repositories {
+    mavenCentral()
+}
+
+bootJar{
+    enabled = false
+}
+
+jar{
+    enabled = true
+}
+
+dependencies {
+    implementation project(':plugin-core')
+    implementation 'org.springframework.boot:spring-boot-starter-web'
+    implementation 'org.flywaydb:flyway-core:6.0.6'
+
+    testImplementation 'org.junit.jupiter:junit-jupiter-api:5.7.0'
+    testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine:5.7.0'
+}
+
+test {
+    useJUnitPlatform()
+}

@@ -1,0 +1,63 @@
+plugins {
+    id 'java'
+}
+
+group 'xyz.guqing'
+version '1.0-SNAPSHOT'
+
+repositories {
+    mavenCentral()
+}
+bootJar{
+    enabled = false
+}
+
+jar {
+    enabled = false
+}
+
+subprojects {
+    jar {
+        group 'build'
+        manifest.attributes(
+                'Plugin-Class': "${pluginClass}",
+                'Plugin-Id': "${pluginId}",
+                'Plugin-Version': "${pluginVersion}",
+                'Plugin-Provider': "${pluginProvider}"
+        )
+        from {
+            configurations.compileClasspath.files.collect { zipTree(it) }
+        }
+        duplicatesStrategy(DuplicatesStrategy.EXCLUDE)
+    }
+
+    task plugin(type: Jar) {
+        archiveBaseName = "plugin-${pluginId}"
+        into('classes') {
+            with jar
+        }
+        into('lib') {
+            from configurations.compileClasspath
+        }
+        archiveExtension ='zip'
+    }
+
+    task assemblePlugin(type: Copy) {
+        from plugin
+        into pluginsDir
+    }
+}
+
+task assemblePlugins(type: Copy) {
+    dependsOn subprojects.assemblePlugin
+}
+build.dependsOn project.tasks.assemblePlugins
+
+dependencies {
+    testImplementation 'org.junit.jupiter:junit-jupiter-api:5.7.0'
+    testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine:5.7.0'
+}
+
+test {
+    useJUnitPlatform()
+}

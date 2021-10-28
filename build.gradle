@@ -1,0 +1,81 @@
+plugins {
+    id "org.springframework.boot" version "2.5.1"
+    id "io.spring.dependency-management" version "1.0.11.RELEASE"
+    id "checkstyle"
+    id "java"
+}
+
+group 'xyz.guqing'
+version '1.0-SNAPSHOT'
+
+repositories {
+    mavenCentral()
+}
+
+bootJar{
+    enabled = false
+}
+
+jar{
+    enabled = true
+}
+
+// plugin location
+ext.pluginsDir = rootProject.buildDir.path + '/plugins'
+
+subprojects {
+    apply plugin: 'java'
+    apply plugin: 'io.spring.dependency-management'
+    apply plugin: 'org.springframework.boot'
+
+    repositories {
+        mavenCentral()
+    }
+
+    dependencies {
+        annotationProcessor "org.projectlombok:lombok"
+        implementation "org.projectlombok:lombok"
+        implementation 'org.pf4j:pf4j:3.6.0'
+    }
+//
+//    if (isPluginProject(project)) {
+//
+//        Properties pluginProp = new Properties()
+//        pluginProp.load(new FileInputStream(file('plugin.properties')))
+//
+//        task buildPlugin(type: Jar) {
+//            group 'build'
+//            dependsOn build
+//            manifest.attributes(
+//                    "Plugin-Id": pluginProp.get("plugin.id"),
+//                    "Plugin-Class": pluginProp.get("plugin.class"),
+//                    "Plugin-Version": pluginProp.get("plugin.version"),
+//                    "Plugin-Provider": pluginProp.get("plugin.provider"),
+//                    "Plugin-Dependencies": pluginProp.get("plugin.dependencies"))
+//            // from configurations.localLibs.asFileTree.files
+//            from {
+//                configurations.compileClasspath.files.collect { zipTree(it) }
+//            }
+//            duplicatesStrategy(DuplicatesStrategy.EXCLUDE)
+//            with jar
+//            doLast {
+//                // Deploy built plugins...
+//            }
+//        }
+//    }
+}
+
+static def isPluginProject(Project project) {
+    return project.hasProperty("plugin")
+}
+
+dependencies {
+    implementation 'org.springframework.boot:spring-boot-starter'
+
+    testImplementation 'org.junit.jupiter:junit-jupiter-api:5.7.0'
+    testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine:5.7.0'
+}
+
+test {
+    useJUnitPlatform()
+}
