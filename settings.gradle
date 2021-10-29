@@ -5,4 +5,5 @@ include 'plugins'
 include 'application'
 include 'plugins:apples'
 findProject(':plugins:apples')?.name = 'apples'
+include 'halo'
 

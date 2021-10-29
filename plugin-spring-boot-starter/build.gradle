@@ -19,9 +19,16 @@ jar{
     enabled = true
 }
 
+configurations.implementation {
+    exclude module: "spring-boot-starter-tomcat"
+    exclude module: "slf4j-log4j12"
+    exclude module: 'junit'
+}
+
 dependencies {
     implementation project(':plugin-core')
     implementation 'org.springframework.boot:spring-boot-starter-web'
+
     implementation 'org.flywaydb:flyway-core:6.0.6'
 
     testImplementation 'org.junit.jupiter:junit-jupiter-api:5.7.0'

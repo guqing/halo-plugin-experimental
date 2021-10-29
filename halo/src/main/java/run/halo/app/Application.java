@@ -1,0 +1,31 @@
+package run.halo.app;
+
+import org.springframework.boot.SpringApplication;
+import org.springframework.boot.autoconfigure.SpringBootApplication;
+import org.springframework.context.ApplicationContextAware;
+import org.springframework.context.annotation.Bean;
+import xyz.guqing.plugin.core.utils.ApplicationContextProvider;
+
+/**
+ * Halo main class.
+ *
+ * @author ryanwang
+ * @date 2017-11-14
+ */
+@SpringBootApplication
+public class Application {
+
+    public static void main(String[] args) {
+        // Customize the spring config location
+        System.setProperty("spring.config.additional-location",
+            "optional:file:${user.home}/.halo/,optional:file:${user.home}/halo-dev/");
+
+        // Run application
+        SpringApplication.run(Application.class, args);
+    }
+
+    @Bean
+    public ApplicationContextAware multiApplicationContextProviderRegister() {
+        return ApplicationContextProvider::registerApplicationContext;
+    }
+}

@@ -2,11 +2,11 @@ spring:
   sbp:
     runtime-mode: deployment # development, deployment
     enabled: true
-#    classes-directories:
-#      - "build/classes"
-#      - "build/resources"
-#    lib-directories:
-#      - "libs"
+    classes-directories:
+      - "build/classes"
+      - "build/resources"
+    lib-directories:
+      - "libs"
     plugins-root: /home/guqing/Developer/plugins
     controller:
       base-path: sbp

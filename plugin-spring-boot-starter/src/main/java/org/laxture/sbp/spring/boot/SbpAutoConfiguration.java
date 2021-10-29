@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package org.laxture.sbp.spring.boot;
 
 import java.io.File;
@@ -37,159 +38,177 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
-import org.springframework.boot.autoconfigure.web.servlet.WebMvcRegistrations;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Import;
 import org.springframework.util.StringUtils;
+import org.springframework.web.servlet.mvc.method.annotation.RequestMappingHandlerMapping;
 import xyz.guqing.plugin.core.SpringBootPluginManager;
 import xyz.guqing.plugin.core.internal.MainAppReadyListener;
 import xyz.guqing.plugin.core.internal.MainAppStartedListener;
+import xyz.guqing.plugin.core.internal.PluginRequestMappingManager;
 import xyz.guqing.plugin.core.internal.SpringBootPluginClassLoader;
 
 /**
  * Sbp main app auto configuration for Spring Boot
+ *
  * @author <a href="https://github.com/hank-cp">Hank CP</a>
  * @see SbpProperties
  */
 @Configuration
-@ConditionalOnClass({ PluginManager.class, SpringBootPluginManager.class })
+@ConditionalOnClass({PluginManager.class, SpringBootPluginManager.class})
 @ConditionalOnProperty(prefix = SbpProperties.PREFIX, value = "enabled", havingValue = "true")
 @EnableConfigurationProperties({SbpProperties.class, SbpPluginProperties.class})
 @Import({MainAppStartedListener.class, MainAppReadyListener.class})
 @Slf4j
 public class SbpAutoConfiguration {
 
-	@Autowired
-	private WebMvcRegistrations mvcRegistrations;
+    @Autowired
+    private RequestMappingHandlerMapping requestMappingHandlerMapping;
 
-	@Bean
-	@ConditionalOnMissingBean(PluginStateListener.class)
-	public PluginStateListener pluginStateListener() {
-		return event -> {
-			PluginDescriptor descriptor = event.getPlugin().getDescriptor();
-			if (log.isDebugEnabled()) {
-				log.debug("Plugin [{}（{}）]({}) {}", descriptor.getPluginId(),
-						descriptor.getVersion(), descriptor.getPluginDescription(),
-						event.getPluginState().toString());
-			}
-		};
-	}
+    @Bean
+    public PluginRequestMappingManager pluginRequestMappingHandlerMapping() {
+        return new PluginRequestMappingManager(requestMappingHandlerMapping);
+    }
 
-	@Bean
-	@ConditionalOnMissingBean(PluginManagerController.class)
-	@ConditionalOnProperty(name = "spring.sbp.controller.base-path")
-	public PluginManagerController pluginManagerController() {
-		return new PluginManagerController();
-	}
+    @Bean
+    @ConditionalOnMissingBean(PluginStateListener.class)
+    public PluginStateListener pluginStateListener() {
+        return event -> {
+            PluginDescriptor descriptor = event.getPlugin().getDescriptor();
+            if (log.isDebugEnabled()) {
+                log.debug("Plugin [{}（{}）]({}) {}", descriptor.getPluginId(),
+                    descriptor.getVersion(), descriptor.getPluginDescription(),
+                    event.getPluginState().toString());
+            }
+        };
+    }
 
-	@Bean
-	@ConditionalOnMissingBean
-	public SpringBootPluginManager pluginManager(SbpProperties properties) {
-		// Setup RuntimeMode
-		System.setProperty("pf4j.mode", properties.getRuntimeMode().toString());
+    @Bean
+    @ConditionalOnMissingBean(PluginManagerController.class)
+    @ConditionalOnProperty(name = "spring.sbp.controller.base-path")
+    public PluginManagerController pluginManagerController() {
+        return new PluginManagerController();
+    }
 
-		// Setup Plugin folder
-		String pluginsRoot = StringUtils.hasText(properties.getPluginsRoot()) ? properties.getPluginsRoot() : "plugins";
-		System.setProperty("pf4j.pluginsDir", pluginsRoot);
-		String appHome = System.getProperty("app.home");
-		if (RuntimeMode.DEPLOYMENT == properties.getRuntimeMode()
-				&& StringUtils.hasText(appHome)) {
-			System.setProperty("pf4j.pluginsDir", appHome + File.separator + pluginsRoot);
-		}
+    @Bean
+    @ConditionalOnMissingBean
+    public SpringBootPluginManager pluginManager(SbpProperties properties) {
+        // Setup RuntimeMode
+        System.setProperty("pf4j.mode", properties.getRuntimeMode().toString());
 
-		SpringBootPluginManager pluginManager = new SpringBootPluginManager(
-				new File(pluginsRoot).toPath()) {
-			@Override
-			protected PluginLoader createPluginLoader() {
-				if (properties.getCustomPluginLoader() != null) {
-					Class<PluginLoader> clazz = properties.getCustomPluginLoader();
-					try {
-						Constructor<?> constructor = clazz.getConstructor(PluginManager.class);
-						return (PluginLoader) constructor.newInstance(this);
-					} catch (Exception ex) {
-						throw new IllegalArgumentException(String.format("Create custom PluginLoader %s failed. Make sure" +
-								"there is a constructor with one argument that accepts PluginLoader", clazz.getName()));
-					}
-				} else {
-					return new CompoundPluginLoader()
-							.add(new DefaultPluginLoader(this) {
-								@Override
-								protected PluginClassLoader createPluginClassLoader(Path pluginPath,
-																					PluginDescriptor pluginDescriptor) {
-									if (properties.getClassesDirectories() != null && properties.getClassesDirectories().size() > 0) {
-										for (String classesDirectory : properties.getClassesDirectories()) {
-											pluginClasspath.addClassesDirectories(classesDirectory);
-										}
-									}
-									if (properties.getLibDirectories() != null && properties.getLibDirectories().size() > 0) {
-										for (String libDirectory : properties.getLibDirectories()) {
-											pluginClasspath.addJarsDirectories(libDirectory);
-										}
-									}
-									return new SpringBootPluginClassLoader(pluginManager,
-											pluginDescriptor, getClass().getClassLoader());
-								}
-							}, this::isDevelopment)
-							.add(new JarPluginLoader(this) {
-								@Override
-								public ClassLoader loadPlugin(Path pluginPath, PluginDescriptor pluginDescriptor) {
-									PluginClassLoader pluginClassLoader = new SpringBootPluginClassLoader(pluginManager, pluginDescriptor, getClass().getClassLoader());
-									pluginClassLoader.addFile(pluginPath.toFile());
-									return pluginClassLoader;
-								}
-							}, this::isNotDevelopment);
-				}
-			}
+        // Setup Plugin folder
+        String pluginsRoot =
+            StringUtils.hasText(properties.getPluginsRoot()) ? properties.getPluginsRoot()
+                : "plugins";
+        System.setProperty("pf4j.pluginsDir", pluginsRoot);
+        String appHome = System.getProperty("app.home");
+        if (RuntimeMode.DEPLOYMENT == properties.getRuntimeMode()
+            && StringUtils.hasText(appHome)) {
+            System.setProperty("pf4j.pluginsDir", appHome + File.separator + pluginsRoot);
+        }
 
-			@Override
-			protected PluginStatusProvider createPluginStatusProvider() {
-				if (PropertyPluginStatusProvider.isPropertySet(properties)) {
-					return new PropertyPluginStatusProvider(properties);
-				}
-				return super.createPluginStatusProvider();
-			}
-		};
+        SpringBootPluginManager pluginManager = new SpringBootPluginManager(
+            new File(pluginsRoot).toPath()) {
+            @Override
+            protected PluginLoader createPluginLoader() {
+                if (properties.getCustomPluginLoader() != null) {
+                    Class<PluginLoader> clazz = properties.getCustomPluginLoader();
+                    try {
+                        Constructor<?> constructor = clazz.getConstructor(PluginManager.class);
+                        return (PluginLoader) constructor.newInstance(this);
+                    } catch (Exception ex) {
+                        throw new IllegalArgumentException(
+                            String.format("Create custom PluginLoader %s failed. Make sure" +
+                                    "there is a constructor with one argument that accepts PluginLoader",
+                                clazz.getName()));
+                    }
+                } else {
+                    return new CompoundPluginLoader()
+                        .add(new DefaultPluginLoader(this) {
+                            @Override
+                            protected PluginClassLoader createPluginClassLoader(Path pluginPath,
+                                PluginDescriptor pluginDescriptor) {
+                                if (properties.getClassesDirectories() != null
+                                    && properties.getClassesDirectories().size() > 0) {
+                                    for (String classesDirectory : properties.getClassesDirectories()) {
+                                        pluginClasspath.addClassesDirectories(classesDirectory);
+                                    }
+                                }
+                                if (properties.getLibDirectories() != null
+                                    && properties.getLibDirectories().size() > 0) {
+                                    for (String libDirectory : properties.getLibDirectories()) {
+                                        pluginClasspath.addJarsDirectories(libDirectory);
+                                    }
+                                }
+                                return new SpringBootPluginClassLoader(pluginManager,
+                                    pluginDescriptor, getClass().getClassLoader());
+                            }
+                        }, this::isDevelopment)
+                        .add(new JarPluginLoader(this) {
+                            @Override
+                            public ClassLoader loadPlugin(Path pluginPath,
+                                PluginDescriptor pluginDescriptor) {
+                                PluginClassLoader pluginClassLoader =
+                                    new SpringBootPluginClassLoader(pluginManager, pluginDescriptor,
+                                        getClass().getClassLoader());
+                                pluginClassLoader.addFile(pluginPath.toFile());
+                                return pluginClassLoader;
+                            }
+                        }, this::isNotDevelopment);
+                }
+            }
 
-		pluginManager.setAutoStartPlugin(properties.isAutoStartPlugin());
-		pluginManager.setProfiles(properties.getPluginProfiles());
-		pluginManager.presetProperties(flatProperties(properties.getPluginProperties()));
-		pluginManager.setExactVersionAllowed(properties.isExactVersionAllowed());
-		pluginManager.setSystemVersion(properties.getSystemVersion());
+            @Override
+            protected PluginStatusProvider createPluginStatusProvider() {
+                if (PropertyPluginStatusProvider.isPropertySet(properties)) {
+                    return new PropertyPluginStatusProvider(properties);
+                }
+                return super.createPluginStatusProvider();
+            }
+        };
 
-		return pluginManager;
-	}
+        pluginManager.setAutoStartPlugin(properties.isAutoStartPlugin());
+        pluginManager.setProfiles(properties.getPluginProfiles());
+        pluginManager.presetProperties(flatProperties(properties.getPluginProperties()));
+        pluginManager.setExactVersionAllowed(properties.isExactVersionAllowed());
+        pluginManager.setSystemVersion(properties.getSystemVersion());
 
-	private Map<String, Object> flatProperties(Map<String, Object> propertiesMap) {
-		Stack<String> pathStack = new Stack<>();
-		Map<String, Object> flatMap = new HashMap<>();
-		propertiesMap.entrySet().forEach(mapEntry -> {
-			recurse(mapEntry, entry -> {
-				pathStack.push(entry.getKey());
-				if (entry.getValue() instanceof Map) return;
-				flatMap.put(String.join(".", pathStack), entry.getValue());
+        return pluginManager;
+    }
 
-			}, entry -> {
-				pathStack.pop();
-			});
-		});
-		return flatMap;
-	}
+    private Map<String, Object> flatProperties(Map<String, Object> propertiesMap) {
+        Stack<String> pathStack = new Stack<>();
+        Map<String, Object> flatMap = new HashMap<>();
+        propertiesMap.entrySet().forEach(mapEntry -> {
+            recurse(mapEntry, entry -> {
+                pathStack.push(entry.getKey());
+                if (entry.getValue() instanceof Map) {
+                    return;
+                }
+                flatMap.put(String.join(".", pathStack), entry.getValue());
 
-	private void recurse(Map.Entry<String, Object> entry,
-						 Consumer<Map.Entry<String, Object>> preConsumer,
-						 Consumer<Map.Entry<String, Object>> postConsumer) {
-		preConsumer.accept(entry);
+            }, entry -> {
+                pathStack.pop();
+            });
+        });
+        return flatMap;
+    }
 
-		if (entry.getValue() instanceof Map) {
-			Map<String, Object> entryMap = (Map<String, Object>) entry.getValue();
-			for (Map.Entry<String, Object> subEntry : entryMap.entrySet()) {
-				recurse(subEntry, preConsumer, postConsumer);
-			}
-		}
+    private void recurse(Map.Entry<String, Object> entry,
+        Consumer<Map.Entry<String, Object>> preConsumer,
+        Consumer<Map.Entry<String, Object>> postConsumer) {
+        preConsumer.accept(entry);
 
-		postConsumer.accept(entry);
-	}
+        if (entry.getValue() instanceof Map) {
+            Map<String, Object> entryMap = (Map<String, Object>) entry.getValue();
+            for (Map.Entry<String, Object> subEntry : entryMap.entrySet()) {
+                recurse(subEntry, preConsumer, postConsumer);
+            }
+        }
+
+        postConsumer.accept(entry);
+    }
 
 }

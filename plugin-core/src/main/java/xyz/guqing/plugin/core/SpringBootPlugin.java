@@ -36,7 +36,7 @@ import xyz.guqing.plugin.core.boot.SbpPluginStartedEvent;
 import xyz.guqing.plugin.core.boot.SbpPluginStoppedEvent;
 import xyz.guqing.plugin.core.boot.SharedDataSourceSpringBootstrap;
 import xyz.guqing.plugin.core.boot.SpringBootstrap;
-import xyz.guqing.plugin.core.internal.PluginRequestMappingHandlerMapping;
+import xyz.guqing.plugin.core.internal.PluginRequestMappingManager;
 import xyz.guqing.plugin.core.internal.SpringExtensionFactory;
 import xyz.guqing.plugin.core.utils.ApplicationContextProvider;
 
@@ -70,7 +70,7 @@ import xyz.guqing.plugin.core.utils.ApplicationContextProvider;
  */
 @Slf4j
 public abstract class SpringBootPlugin extends Plugin {
-
+    public static final String PLUGIN_HANDLER_MAPPING = "pluginRequestMappingHandlerMapping";
     private final SpringBootstrap springBootstrap;
     private ApplicationContext applicationContext;
     private final Set<String> injectedExtensionNames = new HashSet<>();
@@ -80,9 +80,9 @@ public abstract class SpringBootPlugin extends Plugin {
         springBootstrap = createSpringBootstrap();
     }
 
-    private PluginRequestMappingHandlerMapping getMainRequestMapping() {
-        return (PluginRequestMappingHandlerMapping)
-                getMainApplicationContext().getBean("requestMappingHandlerMapping");
+    private PluginRequestMappingManager getMainRequestMapping() {
+        return (PluginRequestMappingManager)
+                getMainApplicationContext().getBean(PLUGIN_HANDLER_MAPPING);
     }
 
     /**
@@ -166,8 +166,8 @@ public abstract class SpringBootPlugin extends Plugin {
             }
 
             // unregister Controller beans
-            PluginRequestMappingHandlerMapping requestMapping = (PluginRequestMappingHandlerMapping)
-                    mainAppCtx.getBean("requestMappingHandlerMapping");
+            PluginRequestMappingManager requestMapping = (PluginRequestMappingManager)
+                    mainAppCtx.getBean(PLUGIN_HANDLER_MAPPING);
             Stream.concat(mainAppCtx.getBeansWithAnnotation(Controller.class).values().stream(),
                 mainAppCtx.getBeansWithAnnotation(RestController.class).values().stream())
                     .filter(bean -> bean.getClass().getClassLoader() == plugin.getPluginClassLoader())

@@ -8,7 +8,7 @@ import org.springframework.web.bind.annotation.RestController;
  * @date 2021-08-06
  */
 @RestController
-@RequestMapping(value = "/apples")
+@RequestMapping(value = "/plugins/apples")
 public class ApplesController {
 
     @RequestMapping(value = "/name")

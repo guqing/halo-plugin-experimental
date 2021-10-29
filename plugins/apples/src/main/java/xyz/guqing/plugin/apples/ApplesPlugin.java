@@ -32,7 +32,7 @@ public class ApplesPlugin extends SpringBootPlugin {
     }
 
     @SpringBootApplication
-    static class ApplesPluginStarter {
+    public static class ApplesPluginStarter {
 
         public static void main(String[] args) {
             SpringApplication.run(ApplesPluginStarter.class, args);
