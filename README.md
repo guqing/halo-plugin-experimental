@@ -3,6 +3,7 @@
 
 ## 简介
 插件管理能力位于 [extensions](halo/src/main/java/run/halo/app/extensions) 目录下
+
 [plugins](./plugins) 目录下为插件示例
 
 在插件和 Halo 主应用共用 ApplicationContext 还是 插件使用独立的 ApplicationContext的问题上：

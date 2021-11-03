@@ -1,13 +1,10 @@
 package run.halo.app.extensions;
 
-import java.util.HashSet;
-import java.util.Set;
 import lombok.extern.slf4j.Slf4j;
 import org.pf4j.Plugin;
 import org.pf4j.PluginState;
 import org.pf4j.PluginWrapper;
 import org.springframework.context.ApplicationContext;
-import org.springframework.context.ConfigurableApplicationContext;
 import run.halo.app.extensions.event.HaloPluginRestartedEvent;
 import run.halo.app.extensions.event.HaloPluginStartedEvent;
 import run.halo.app.extensions.event.HaloPluginStoppedEvent;
@@ -17,7 +14,6 @@ import run.halo.app.extensions.internal.PluginRequestMappingManager;
 public abstract class SpringPlugin extends Plugin {
 
     private final ApplicationContext applicationContext;
-    private final Set<String> injectedExtensionNames = new HashSet<>();
 
     public SpringPlugin(PluginWrapper wrapper) {
         super(wrapper);
@@ -31,7 +27,13 @@ public abstract class SpringPlugin extends Plugin {
     /**
      * Release plugin holding release on stop.
      */
-    public void releaseAdditionalResources() {
+    public void releaseAdditionalResources(String pluginId) {
+        // release request mapping
+        getRequestMappingManager()
+            .unregisterControllers(getPluginManager(), pluginId);
+
+        // release extension bean
+        getPluginManager().releaseRegisteredResources(pluginId);
     }
 
     @Override
@@ -58,19 +60,13 @@ public abstract class SpringPlugin extends Plugin {
         if (getWrapper().getPluginState() != PluginState.STARTED) {
             return;
         }
+        String pluginId = getWrapper().getPluginId();
+        log.debug("Stopping plugin {} ......", pluginId);
 
-        log.debug("Stopping plugin {} ......", getWrapper().getPluginId());
-        releaseAdditionalResources();
-        // unregister Extension beans
-        for (String extensionName : injectedExtensionNames) {
-            log.debug("Unregister extension <{}> to main ApplicationContext", extensionName);
-            ExtensionsInjector.unregisterBeanFromContext(applicationContext, extensionName);
-        }
+        releaseAdditionalResources(pluginId);
 
-        getRequestMappingManager().unregisterControllers(this);
+        // send stopped event
         applicationContext.publishEvent(new HaloPluginStoppedEvent(applicationContext));
-        injectedExtensionNames.clear();
-        ((ConfigurableApplicationContext) applicationContext).close();
 
         log.debug("Plugin {} is stopped", getWrapper().getPluginId());
     }

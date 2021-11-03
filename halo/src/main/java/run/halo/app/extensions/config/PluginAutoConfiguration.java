@@ -151,45 +151,9 @@ public class PluginAutoConfiguration {
         };
 
         pluginManager.setAutoStartPlugin(properties.isAutoStartPlugin());
-        pluginManager.setProfiles(properties.getPluginProfiles());
-        pluginManager.presetProperties(flatProperties(properties.getPluginProperties()));
         pluginManager.setExactVersionAllowed(properties.isExactVersionAllowed());
         pluginManager.setSystemVersion(properties.getSystemVersion());
 
         return pluginManager;
     }
-
-    private Map<String, Object> flatProperties(Map<String, Object> propertiesMap) {
-        Stack<String> pathStack = new Stack<>();
-        Map<String, Object> flatMap = new HashMap<>();
-        propertiesMap.entrySet().forEach(mapEntry -> {
-            recurse(mapEntry, entry -> {
-                pathStack.push(entry.getKey());
-                if (entry.getValue() instanceof Map) {
-                    return;
-                }
-                flatMap.put(String.join(".", pathStack), entry.getValue());
-
-            }, entry -> {
-                pathStack.pop();
-            });
-        });
-        return flatMap;
-    }
-
-    private void recurse(Map.Entry<String, Object> entry,
-        Consumer<Map.Entry<String, Object>> preConsumer,
-        Consumer<Map.Entry<String, Object>> postConsumer) {
-        preConsumer.accept(entry);
-
-        if (entry.getValue() instanceof Map) {
-            Map<String, Object> entryMap = (Map<String, Object>) entry.getValue();
-            for (Map.Entry<String, Object> subEntry : entryMap.entrySet()) {
-                recurse(subEntry, preConsumer, postConsumer);
-            }
-        }
-
-        postConsumer.accept(entry);
-    }
-
 }

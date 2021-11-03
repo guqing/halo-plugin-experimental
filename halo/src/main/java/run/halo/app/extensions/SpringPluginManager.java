@@ -8,9 +8,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.stream.Stream;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.lang3.StringUtils;
 import org.pf4j.DefaultPluginManager;
 import org.pf4j.ExtensionFactory;
 import org.pf4j.ExtensionFinder;
@@ -25,12 +23,8 @@ import org.springframework.beans.factory.InitializingBean;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.ApplicationContextAware;
 import org.springframework.lang.NonNull;
-import org.springframework.stereotype.Controller;
-import org.springframework.web.bind.annotation.RestController;
 import run.halo.app.extensions.config.model.PluginStartingError;
 import run.halo.app.extensions.event.HaloPluginStateChangedEvent;
-import run.halo.app.extensions.internal.PluginRequestMappingManager;
-import run.halo.app.extensions.internal.SpringExtensionFactory;
 
 /**
  * PluginManager to hold the main ApplicationContext
@@ -43,10 +37,8 @@ public class SpringPluginManager extends DefaultPluginManager
     implements ApplicationContextAware, InitializingBean {
 
     private final Map<String, PluginStartingError> startingErrors = new HashMap<>();
-    public Map<String, Object> presetProperties = new HashMap<>();
     private ApplicationContext applicationContext;
     private boolean autoStartPlugin = true;
-    private String[] profiles;
     private PluginRepository pluginRepository;
     private ExtensionsInjector extensionsInjector;
 
@@ -79,6 +71,10 @@ public class SpringPluginManager extends DefaultPluginManager
         return this.pluginRepository;
     }
 
+    public ExtensionsInjector getExtensionsInjector() {
+        return extensionsInjector;
+    }
+
     public PluginRepository getPluginRepository() {
         return pluginRepository;
     }
@@ -89,26 +85,6 @@ public class SpringPluginManager extends DefaultPluginManager
 
     public void setAutoStartPlugin(boolean autoStartPlugin) {
         this.autoStartPlugin = autoStartPlugin;
-    }
-
-    public String[] getProfiles() {
-        return profiles;
-    }
-
-    public void setProfiles(String[] profiles) {
-        this.profiles = profiles;
-    }
-
-    public void presetProperties(Map<String, Object> presetProperties) {
-        this.presetProperties.putAll(presetProperties);
-    }
-
-    public void presetProperties(String name, Object value) {
-        this.presetProperties.put(name, value);
-    }
-
-    public Map<String, Object> getPresetProperties() {
-        return presetProperties;
     }
 
     public ApplicationContext getApplicationContext() {
@@ -133,6 +109,11 @@ public class SpringPluginManager extends DefaultPluginManager
         return startingErrors.get(pluginId);
     }
 
+
+    public Set<Class<?>> getControllers(String pluginId) {
+        return this.extensionsInjector.getControllers(pluginId);
+    }
+
     // region Plugin State Manipulation
     private void doStartPlugins() {
         startingErrors.clear();
@@ -151,7 +132,7 @@ public class SpringPluginManager extends DefaultPluginManager
                     log.error(e.getMessage(), e);
                     startingErrors.put(pluginWrapper.getPluginId(), PluginStartingError.of(
                         pluginWrapper.getPluginId(), e.getMessage(), e.toString()));
-                    releaseRegisteredResources(pluginWrapper, applicationContext);
+                    releaseRegisteredResources(pluginWrapper.getPluginId());
                 }
             }
         }
@@ -161,35 +142,9 @@ public class SpringPluginManager extends DefaultPluginManager
             System.currentTimeMillis() - ts, startingErrors.size());
     }
 
-    public void releaseRegisteredResources(PluginWrapper plugin,
-        ApplicationContext applicationContext) {
+    public void releaseRegisteredResources(String pluginId) {
         try {
-            // unregister Extension beans
-            Set<String> extensionClassNames = plugin.getPluginManager()
-                .getExtensionClassNames(plugin.getPluginId());
-            for (String extensionClassName : extensionClassNames) {
-                Class<?> extensionClass =
-                    plugin.getPluginClassLoader().loadClass(extensionClassName);
-                SpringExtensionFactory extensionFactory = (SpringExtensionFactory) plugin
-                    .getPluginManager().getExtensionFactory();
-                String beanName = extensionFactory.getExtensionBeanName(extensionClass);
-                if (StringUtils.isEmpty(beanName)) {
-                    continue;
-                }
-                ExtensionsInjector.unregisterBeanFromContext(applicationContext, beanName);
-            }
-
-            // unregister Controller beans
-            PluginRequestMappingManager requestMapping =
-                applicationContext.getBean(PluginRequestMappingManager.class);
-            Stream.concat(
-                    applicationContext.getBeansWithAnnotation(Controller.class).values().stream(),
-                    applicationContext.getBeansWithAnnotation(RestController.class).values().stream())
-                .filter(bean -> bean.getClass().getClassLoader() == plugin.getPluginClassLoader())
-                .forEach(bean -> {
-                    requestMapping.unregisterController(applicationContext, bean);
-                });
-
+            extensionsInjector.unregisterExtensions(pluginId);
         } catch (Exception e) {
             log.trace("Release registered resources failed. " + e.getMessage(), e);
         }
@@ -237,7 +192,7 @@ public class SpringPluginManager extends DefaultPluginManager
             log.error(e.getMessage(), e);
             startingErrors.put(plugin.getPluginId(), PluginStartingError.of(
                 plugin.getPluginId(), e.getMessage(), e.toString()));
-            releaseRegisteredResources(plugin, applicationContext);
+            releaseRegisteredResources(pluginId);
         }
         return plugin.getPluginState();
     }

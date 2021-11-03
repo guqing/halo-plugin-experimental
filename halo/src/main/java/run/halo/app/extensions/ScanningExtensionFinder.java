@@ -87,7 +87,11 @@ public class ScanningExtensionFinder extends AbstractExtensionFinder {
         for (String extensionAnnotationName : extensionAnnotationNames) {
             ClassInfoList classesWithAnnotation =
                 scanResult.getClassesWithAnnotation(extensionAnnotationName);
-            classInfos.addAll(classesWithAnnotation);
+            for (ClassInfo classInfo : classesWithAnnotation) {
+                if (!classInfos.contains(classInfo) && !classInfo.isAnnotation()) {
+                    classInfos.add(classInfo);
+                }
+            }
         }
         return classInfos;
     }

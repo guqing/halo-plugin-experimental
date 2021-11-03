@@ -2,18 +2,19 @@ package run.halo.app.extensions.internal;
 
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
-import java.util.HashMap;
 import java.util.LinkedHashSet;
 import java.util.Set;
+import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
+import org.pf4j.PluginWrapper;
 import org.springframework.beans.BeansException;
 import org.springframework.context.ApplicationContext;
 import org.springframework.util.ReflectionUtils;
 import org.springframework.web.servlet.mvc.method.annotation.RequestMappingHandlerMapping;
-import run.halo.app.extensions.ExtensionsInjector;
 import run.halo.app.extensions.ExtController;
 import run.halo.app.extensions.ExtRestController;
 import run.halo.app.extensions.SpringPlugin;
+import run.halo.app.extensions.SpringPluginManager;
 
 /**
  * Plugin mapping manager
@@ -32,13 +33,15 @@ public class PluginRequestMappingManager {
     }
 
     public void registerControllers(SpringPlugin springBootPlugin) {
-        getControllerBeans(springBootPlugin).forEach(this::registerController);
+        String pluginId = springBootPlugin.getWrapper().getPluginId();
+        getControllerBeans(springBootPlugin.getPluginManager(), pluginId)
+            .forEach(this::registerController);
     }
 
     private void registerController(Object controller) {
-        Method detectHandlerMethods =
-            ReflectionUtils.findMethod(RequestMappingHandlerMapping.class, "detectHandlerMethods",
-                Object.class);
+        log.debug("Registering plugin request mapping for bean: [{}]", controller);
+        Method detectHandlerMethods = ReflectionUtils.findMethod(RequestMappingHandlerMapping.class,
+            "detectHandlerMethods", Object.class);
         if (detectHandlerMethods == null) {
             return;
         }
@@ -55,34 +58,30 @@ public class PluginRequestMappingManager {
         }
     }
 
-    public void unregisterControllers(SpringPlugin springBootPlugin) {
-        getControllerBeans(springBootPlugin).forEach(bean ->
-            unregisterController(springBootPlugin.getApplicationContext(), bean));
-    }
-
-    public Set<Object> getControllerBeans(SpringPlugin springBootPlugin) {
-        ApplicationContext applicationContext = springBootPlugin.getApplicationContext();
-        Set<Object> controllerBeans = new LinkedHashSet<>();
-        try {
-            controllerBeans.addAll(
-                applicationContext.getBeansWithAnnotation(ExtController.class).values());
-            controllerBeans.addAll(
-                applicationContext.getBeansWithAnnotation(ExtRestController.class).values());
-        } catch (BeansException e) {
-            // ignore this exception
-            log.warn(e.getMessage());
-        }
-        return controllerBeans;
-    }
-
-    public void unregisterController(ApplicationContext ctx, Object controller) {
-        new HashMap<>(requestMappingHandlerMapping.getHandlerMethods()).forEach(
-            (mapping, handlerMethod) -> {
+    public void unregisterControllerMapping(Object controller) {
+        requestMappingHandlerMapping.getHandlerMethods()
+            .forEach((mapping, handlerMethod) -> {
                 if (controller == handlerMethod.getBean()) {
+                    log.debug("Removed plugin request mapping [{}] from bean [{}]", mapping, controller);
                     requestMappingHandlerMapping.unregisterMapping(mapping);
                 }
             });
-        ExtensionsInjector.unregisterBeanFromContext(ctx, controller);
     }
 
+    public void unregisterControllers(SpringPluginManager pluginManager, String pluginId) {
+        getControllerBeans(pluginManager, pluginId).forEach(controller -> {
+            unregisterControllerMapping(controller);
+            pluginManager.getExtensionsInjector().unregisterExtension(pluginId, controller);
+        });
+    }
+
+    public Set<Object> getControllerBeans(SpringPluginManager pluginManager, String pluginId) {
+        ApplicationContext applicationContext = pluginManager.getApplicationContext();
+        return pluginManager
+            .getControllers(pluginId)
+            .stream()
+            .filter(clazz -> applicationContext.containsBeanDefinition(clazz.getName()))
+            .map(applicationContext::getBean)
+            .collect(Collectors.toSet());
+    }
 }
