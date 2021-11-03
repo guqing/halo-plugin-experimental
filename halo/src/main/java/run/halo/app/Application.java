@@ -2,9 +2,6 @@ package run.halo.app;
 
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
-import org.springframework.context.ApplicationContextAware;
-import org.springframework.context.annotation.Bean;
-import xyz.guqing.plugin.core.utils.ApplicationContextProvider;
 
 /**
  * Halo main class.
@@ -22,10 +19,5 @@ public class Application {
 
         // Run application
         SpringApplication.run(Application.class, args);
-    }
-
-    @Bean
-    public ApplicationContextAware multiApplicationContextProviderRegister() {
-        return ApplicationContextProvider::registerApplicationContext;
     }
 }

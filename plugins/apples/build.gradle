@@ -18,9 +18,10 @@ jar{
 }
 
 dependencies {
-    implementation project(':plugin-core')
+    compileOnly project(':halo')
     implementation 'org.pf4j:pf4j:3.6.0'
-    implementation 'org.springframework.boot:spring-boot-starter-web'
+    implementation 'com.alibaba:fastjson:1.2.75'
+    compileOnly 'org.springframework.boot:spring-boot-starter-web'
     testImplementation 'org.junit.jupiter:junit-jupiter-api:5.7.0'
     testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine:5.7.0'
 }

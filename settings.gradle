@@ -1,9 +1,5 @@
-rootProject.name = 'halo-plugin'
-include 'plugin-spring-boot-starter'
-include 'plugin-core'
+rootProject.name = 'halo-plugin-experimental'
+include 'halo'
 include 'plugins'
-include 'application'
 include 'plugins:apples'
 findProject(':plugins:apples')?.name = 'apples'
-include 'halo'
-

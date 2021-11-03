@@ -17,6 +17,9 @@ jar {
 }
 
 subprojects {
+    dependencies {
+        implementation 'org.pf4j:pf4j:3.6.0'
+    }
     jar {
         group 'build'
         manifest.attributes(
@@ -26,7 +29,7 @@ subprojects {
                 'Plugin-Provider': "${pluginProvider}"
         )
         from {
-            configurations.compileClasspath.files.collect { zipTree(it) }
+            configurations.runtimeClasspath.files.collect { zipTree(it) }
         }
         duplicatesStrategy(DuplicatesStrategy.EXCLUDE)
     }

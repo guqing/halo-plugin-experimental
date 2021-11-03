@@ -12,6 +12,7 @@ spring:
   devtools:
     restart:
       eanbled: true
+      log-condition-evaluation-delta: false
   datasource:
     type: com.zaxxer.hikari.HikariDataSource
 
@@ -46,21 +47,6 @@ spring:
       max-request-size: 10240MB
   cache:
     type: none
-  sbp:
-    runtime-mode: deployment # development, deployment
-    enabled: true
-    classes-directories:
-      - "build/classes"
-      - "build/resources"
-    lib-directories:
-      - "libs"
-    plugins-root: /home/guqing/Developer/plugins
-    controller:
-      base-path: sbp
-    #    custom-plugin-loaders:
-    #      - demo.sbp.app.CustomPluginLoader
-    main:
-      allow-bean-definition-overriding: true
 management:
   endpoints:
     web:
@@ -85,3 +71,18 @@ halo:
   mode: development
   workDir: ${user.home}/halo-dev/
   cache: memory
+  plugin:
+    runtime-mode: deployment # development, deployment
+    enabled: true
+    classes-directories:
+      - "build/classes"
+      - "build/resources"
+    lib-directories:
+      - "libs"
+    plugins-root: ${user.home}/halo-dev/plugins
+    controller:
+      base-path: plugins
+    #    custom-plugin-loaders:
+    #      - run.halo.app.CustomPluginLoader
+    main:
+      allow-bean-definition-overriding: true
