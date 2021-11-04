@@ -3,3 +3,8 @@ include 'halo'
 include 'plugins'
 include 'plugins:apples'
 findProject(':plugins:apples')?.name = 'apples'
+include 'plugins:potatoes'
+findProject(':plugins:potatoes')?.name = 'potatoes'
+include 'plugins:potatoes'
+findProject(':plugins:potatoes')?.name = 'potatoes'
+

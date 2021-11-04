@@ -142,8 +142,6 @@ public class SpringExtensionFactory implements ExtensionFactory {
             BeanDefinitionBuilder.genericBeanDefinition(extensionClass);
         BeanDefinition beanDefinition = beanDefinitionBuilder.getRawBeanDefinition();
         beanDefinition.setScope(SCOPE_SINGLETON);
-        System.out.println(
-            Arrays.toString(beanFactory.getDependenciesForBean(extensionClass.getName())));
         beanFactory.registerBeanDefinition(extensionClass.getName(), beanDefinition);
     }
 
