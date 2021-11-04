@@ -4,8 +4,11 @@ import java.util.Optional;
 import java.util.regex.Pattern;
 
 /**
+ * Class file coupling filter utils.
+ *
  * @author guqing
- * @since 2021-11-04
+ * @date 2021-11-04
+ * @see <a href="https://github.com/ExpediaGroup/jarviz">jarviz</a>
  */
 public final class CouplingFilterUtils {
 
@@ -34,7 +37,7 @@ public final class CouplingFilterUtils {
     }
 
     /**
-     * Matches a given coupling to an include RegEx backed {@link CouplingFilter}.
+     * Matches a given coupling to an included RegEx backed {@link CouplingFilter}.
      *
      * @param filter   The filter.
      * @param coupling The coupling.
@@ -57,7 +60,7 @@ public final class CouplingFilterUtils {
     }
 
     /**
-     * Matches a given coupling to an exclude RegEx backed {@link CouplingFilter}.
+     * Matches a given coupling to an excluded RegEx backed {@link CouplingFilter}.
      *
      * @param filter   The filter.
      * @param coupling The coupling.
@@ -89,9 +92,10 @@ public final class CouplingFilterUtils {
      * @return Indicates whether the given coupling matches the pattern, else return provided
      * default value.
      */
-    static boolean matchString(final Optional<Pattern> pattern, final String string,
+    static boolean matchString(Pattern pattern, final String string,
         final boolean defaultValue) {
-        return pattern.map(p -> p.matcher(string).matches())
+        return Optional.ofNullable(pattern)
+            .map(p -> p.matcher(string).matches())
             .orElse(defaultValue);
     }
 }

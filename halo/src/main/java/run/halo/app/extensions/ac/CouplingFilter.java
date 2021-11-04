@@ -6,8 +6,12 @@ import java.util.concurrent.Callable;
 import java.util.regex.Pattern;
 
 /**
+ * The coupling filter specifies the RegEx patterns to filter the couplings found at analysis,
+ * before generating the output data.
+ *
  * @author guqing
- * @since 2021-11-04
+ * @date 2021-11-04
+ * @see <a href="https://github.com/ExpediaGroup/jarviz">jarviz</a>
  */
 public interface CouplingFilter {
 
@@ -80,33 +84,33 @@ public interface CouplingFilter {
     Optional<String> getTargetMethod();
 
     @JsonIgnore
-    default Optional<Pattern> getSourcePackagePattern() {
-        return getSourcePackage().map(Pattern::compile);
+    default Pattern getSourcePackagePattern() {
+        return getSourcePackage().map(Pattern::compile).orElse(null);
     }
 
     @JsonIgnore
-    default Optional<Pattern> getSourceClassPattern() {
-        return getSourceClass().map(Pattern::compile);
+    default Pattern getSourceClassPattern() {
+        return getSourceClass().map(Pattern::compile).orElse(null);
     }
 
     @JsonIgnore
-    default Optional<Pattern> getSourceMethodPattern() {
-        return getSourceMethod().map(Pattern::compile);
+    default Pattern getSourceMethodPattern() {
+        return getSourceMethod().map(Pattern::compile).orElse(null);
     }
 
     @JsonIgnore
-    default Optional<Pattern> getTargetPackagePattern() {
-        return getTargetPackage().map(Pattern::compile);
+    default Pattern getTargetPackagePattern() {
+        return getTargetPackage().map(Pattern::compile).orElse(null);
     }
 
     @JsonIgnore
-    default Optional<Pattern> getTargetClassPattern() {
-        return getTargetClass().map(Pattern::compile);
+    default Pattern getTargetClassPattern() {
+        return getTargetClass().map(Pattern::compile).orElse(null);
     }
 
     @JsonIgnore
-    default Optional<Pattern> getTargetMethodPattern() {
-        return getTargetMethod().map(Pattern::compile);
+    default Pattern getTargetMethodPattern() {
+        return getTargetMethod().map(Pattern::compile).orElse(null);
     }
 
     class Builder {
