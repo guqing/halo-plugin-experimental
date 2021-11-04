@@ -32,11 +32,11 @@ public class PluginProperties {
     /**
      * Plugins disabled by default
      */
-    private String[] disabledPlugins;
+    private String[] disabledPlugins = new String[0];
     /**
      * Plugins enabled by default, prior to `disabledPlugins`
      */
-    private String[] enabledPlugins;
+    private String[] enabledPlugins = new String[0];
     /**
      * Set to true to allow requires expression to be exactly x.y.z. The default is false, meaning
      * that using an exact version x.y.z will implicitly mean the same as >=x.y.z

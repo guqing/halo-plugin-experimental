@@ -40,7 +40,7 @@ subprojects {
             with jar
         }
         into('lib') {
-            from configurations.compileClasspath
+            from configurations.runtimeClasspath
         }
         archiveExtension ='zip'
     }

@@ -51,7 +51,6 @@ public class ScanningExtensionFinder extends AbstractExtensionFinder {
             log.debug("Reading extensions storage from plugin '{}'", pluginId);
             Set<String> bucket = new HashSet<>();
             if (Objects.nonNull(plugin.getPlugin())) {
-
                 try (ScanResult scanResult = new ClassGraph()
                     .enableAllInfo()
                     .addClassLoader(plugin.getPluginClassLoader())

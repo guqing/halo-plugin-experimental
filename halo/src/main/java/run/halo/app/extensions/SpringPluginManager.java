@@ -98,12 +98,13 @@ public class SpringPluginManager extends DefaultPluginManager
     }
 
     @Override
-    public void afterPropertiesSet() throws Exception {
+    public void afterPropertiesSet() {
         // This method load, start plugins and inject extensions in Spring
         loadPlugins();
         this.extensionsInjector = new ExtensionsInjector(this);
         this.extensionsInjector.injectExtensions();
     }
+
 
     public PluginStartingError getPluginStartingError(String pluginId) {
         return startingErrors.get(pluginId);
