@@ -24,7 +24,6 @@ public class SpringPluginClassLoader extends PluginClassLoader {
 
     private static final Logger log = LoggerFactory.getLogger(SpringPluginClassLoader.class);
 
-    private List<String> pluginFirstClasses;
     private List<String> pluginOnlyResources;
     private final PluginManager pluginManager;
     private final PluginDescriptor pluginDescriptor;
@@ -35,15 +34,6 @@ public class SpringPluginClassLoader extends PluginClassLoader {
         super(pluginManager, pluginDescriptor, parent, ClassLoadingStrategy.APD);
         this.pluginManager = pluginManager;
         this.pluginDescriptor = pluginDescriptor;
-    }
-
-    public void setPluginFirstClasses(@NonNull List<String> pluginFirstClasses) {
-        this.pluginFirstClasses = pluginFirstClasses.stream()
-                .map(pluginFirstClass -> pluginFirstClass
-                        .replaceAll("\\.", "[$0]")
-                        .replace("[*]", ".*?")
-                        .replace("[?]", ".?"))
-                .collect(Collectors.toList());
     }
 
     public void setPluginOnlyResources(@NonNull List<String> pluginOnlyResources) {
@@ -83,30 +73,6 @@ public class SpringPluginClassLoader extends PluginClassLoader {
         return isPluginOnlyResources(name) ? findResources(name) : super.getResources(name);
     }
 
-    @Override
-    public Class<?> loadClass(String className) throws ClassNotFoundException {
-        // if specified, try to load from plugin classpath first
-        if (isPluginFirstClass(className)) {
-            try {
-                return loadClassFromPlugin(className);
-            } catch (ClassNotFoundException ignored) {}
-        }
-        // not found, load from parent
-        return super.loadClass(className);
-    }
-
-    private boolean isPluginFirstClass(String name) {
-        if (pluginFirstClasses == null || pluginFirstClasses.size() <= 0) {
-            return false;
-        }
-        for (String pluginFirstClass : pluginFirstClasses) {
-            if (name.matches(pluginFirstClass)) {
-                return true;
-            }
-        }
-        return false;
-    }
-
     private boolean isPluginOnlyResources(String name) {
         if (pluginOnlyResources == null || pluginOnlyResources.size() <= 0) {
             return false;
@@ -117,29 +83,6 @@ public class SpringPluginClassLoader extends PluginClassLoader {
             }
         }
         return false;
-    }
-
-    private Class<?> loadClassFromPlugin(String className) throws ClassNotFoundException {
-        synchronized (getClassLoadingLock(className)) {
-            log.trace("Received request to load class '{}'", className);
-
-            // second check whether it's already been loaded
-            Class<?> loadedClass = findLoadedClass(className);
-            if (loadedClass != null) {
-                log.trace("Found loaded class '{}'", className);
-                return loadedClass;
-            }
-
-            // nope, try to load locally
-            try {
-                loadedClass = findClass(className);
-                log.trace("Found class '{}' in plugin classpath", className);
-                return loadedClass;
-            } catch (ClassNotFoundException ignored) {}
-
-            // try next step
-            return loadClassFromDependencies(className);
-        }
     }
 
     protected Class<?> getLoadedClass(String className) {

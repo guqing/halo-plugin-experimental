@@ -4,6 +4,7 @@ import static org.springframework.beans.factory.config.BeanDefinition.SCOPE_SING
 
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
+import java.util.Arrays;
 import java.util.Comparator;
 import java.util.Objects;
 import java.util.Optional;
@@ -141,7 +142,8 @@ public class SpringExtensionFactory implements ExtensionFactory {
             BeanDefinitionBuilder.genericBeanDefinition(extensionClass);
         BeanDefinition beanDefinition = beanDefinitionBuilder.getRawBeanDefinition();
         beanDefinition.setScope(SCOPE_SINGLETON);
-
+        System.out.println(
+            Arrays.toString(beanFactory.getDependenciesForBean(extensionClass.getName())));
         beanFactory.registerBeanDefinition(extensionClass.getName(), beanDefinition);
     }
 

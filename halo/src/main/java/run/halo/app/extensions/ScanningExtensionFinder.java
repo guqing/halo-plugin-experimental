@@ -4,6 +4,7 @@ import io.github.classgraph.ClassGraph;
 import io.github.classgraph.ClassInfo;
 import io.github.classgraph.ClassInfoList;
 import io.github.classgraph.ScanResult;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -23,6 +24,8 @@ import org.springframework.stereotype.Repository;
 import org.springframework.stereotype.Service;
 import org.springframework.web.bind.annotation.RestController;
 import run.halo.app.Application;
+import run.halo.app.extensions.ac.ClassReadUtils;
+import run.halo.app.extensions.ac.CouplingAnalyser;
 
 /**
  * Extension finder using classGraph to support Spring annotations.
@@ -47,18 +50,20 @@ public class ScanningExtensionFinder extends AbstractExtensionFinder {
             String pluginId = plugin.getDescriptor().getPluginId();
             log.debug("Reading extensions storage from plugin '{}'", pluginId);
             Set<String> bucket = new HashSet<>();
-            if(Objects.nonNull(plugin.getPlugin())) {
+            if (Objects.nonNull(plugin.getPlugin())) {
 
-                try (ScanResult scanResult =
-                    new ClassGraph()
-                        .enableAllInfo()
-                        .addClassLoader(plugin.getPluginClassLoader())
-                        .whitelistPackages(plugin.getPlugin().getClass().getPackage().getName())
-                        .scan()) {
-
+                try (ScanResult scanResult = new ClassGraph()
+                    .enableAllInfo()
+                    .addClassLoader(plugin.getPluginClassLoader())
+                    .whitelistPackages(plugin.getPlugin().getClass().getPackage().getName())
+                    .scan()) {
                     for (ClassInfo classInfo : getExtensionClasses(scanResult)) {
-                        if(log.isInfoEnabled()) {
+                        if (log.isInfoEnabled()) {
                             log.info("Found extension {}", classInfo.getName());
+                        }
+                        if (!checkPermission(plugin.getPluginClassLoader(), classInfo)) {
+                            // The plugin has illegal access and will refuse loading it
+                            return Collections.emptyMap();
                         }
                         bucket.add(classInfo.getName());
                     }
@@ -71,6 +76,22 @@ public class ScanningExtensionFinder extends AbstractExtensionFinder {
         }
 
         return result;
+    }
+
+    private boolean checkPermission(ClassLoader pluginClassLoader, ClassInfo classInfo) {
+        if (classInfo == null) {
+            return true;
+        }
+        byte[] classBytes =
+            ClassReadUtils.readClassToByteArray(pluginClassLoader, classInfo.getName());
+        Set<String> couplings =
+            CouplingAnalyser.analyseClass(classInfo.getSimpleName(), classBytes);
+        if (couplings != null && couplings.size() > 0) {
+            log.warn("Illegal access, Class [{}] should not depend on {}", classInfo.getName(),
+                couplings);
+            return false;
+        }
+        return true;
     }
 
     private ClassInfoList getExtensionClasses(ScanResult scanResult) {
@@ -108,9 +129,10 @@ public class ScanningExtensionFinder extends AbstractExtensionFinder {
             .addClassLoader(getClass().getClassLoader())
             .whitelistPackages(Application.class.getPackage().getName())
             .scan()) {
-            for (ClassInfo classInfo : scanResult.getClassesWithAnnotation(Extension.class.getName())) {
+            for (ClassInfo classInfo : scanResult.getClassesWithAnnotation(
+                Extension.class.getName())) {
 
-                if(log.isInfoEnabled()) {
+                if (log.isInfoEnabled()) {
                     log.info("Found extension {}", classInfo.getName());
                 }
                 bucket.add(classInfo.getName());
