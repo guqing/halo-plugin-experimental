@@ -15,6 +15,8 @@ import org.slf4j.LoggerFactory;
 import org.springframework.context.ApplicationContext;
 import org.springframework.util.Assert;
 import org.springframework.util.CollectionUtils;
+import run.halo.app.extensions.annotation.ExtController;
+import run.halo.app.extensions.annotation.ExtRestController;
 
 /**
  * @author guqing

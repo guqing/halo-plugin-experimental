@@ -29,7 +29,6 @@ import org.springframework.util.StringUtils;
 import org.springframework.web.servlet.mvc.method.annotation.RequestMappingHandlerMapping;
 import run.halo.app.extensions.SpringPluginManager;
 import run.halo.app.extensions.internal.PluginRequestMappingManager;
-import run.halo.app.extensions.internal.SpringPluginClassLoader;
 
 /**
  * Plugin auto-configuration for Spring Boot
@@ -106,26 +105,7 @@ public class PluginAutoConfiguration {
                     }
                 } else {
                     return new CompoundPluginLoader()
-                        .add(new DefaultPluginLoader(this) {
-                            @Override
-                            protected PluginClassLoader createPluginClassLoader(Path pluginPath,
-                                PluginDescriptor pluginDescriptor) {
-                                if (properties.getClassesDirectories() != null
-                                    && properties.getClassesDirectories().size() > 0) {
-                                    for (String classesDirectory : properties.getClassesDirectories()) {
-                                        pluginClasspath.addClassesDirectories(classesDirectory);
-                                    }
-                                }
-                                if (properties.getLibDirectories() != null
-                                    && properties.getLibDirectories().size() > 0) {
-                                    for (String libDirectory : properties.getLibDirectories()) {
-                                        pluginClasspath.addJarsDirectories(libDirectory);
-                                    }
-                                }
-                                return new SpringPluginClassLoader(pluginManager,
-                                    pluginDescriptor, getClass().getClassLoader());
-                            }
-                        }, this::isDevelopment)
+                        .add(new DefaultPluginLoader(this), this::isDevelopment)
                         .add(new JarPluginLoader(this) {
                             @Override
                             public ClassLoader loadPlugin(Path pluginPath,

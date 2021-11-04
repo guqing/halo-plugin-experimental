@@ -1,4 +1,4 @@
-package run.halo.app.extensions;
+package run.halo.app.extensions.annotation;
 
 import java.lang.annotation.Documented;
 import java.lang.annotation.ElementType;

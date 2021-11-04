@@ -1,6 +1,7 @@
 package run.halo.app.extensions.ac;
 
 import java.io.IOException;
+import java.util.Collections;
 import java.util.Set;
 import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
@@ -12,7 +13,7 @@ import run.halo.app.extensions.ac.CouplingFilter.Builder;
  */
 @Slf4j
 public class CouplingAnalyser {
-
+    private static final boolean disable = true;
     private static final CouplingFilter filter = new Builder().setTargetPackage(
         "^(run\\.halo\\.app\\.utils|run\\.halo\\.app\\.mail).*$").build();
 
@@ -20,6 +21,9 @@ public class CouplingAnalyser {
         .setInclude(filter).build();
 
     public static Set<String> analyseClass(String className, byte[] classData) {
+        if (disable) {
+            return Collections.emptySet();
+        }
         UsageCollector collector = new UsageCollector(config);
         new FilteredClassVisitor(className, collector, classData).visit();
         return collector.getMethodCouplings()

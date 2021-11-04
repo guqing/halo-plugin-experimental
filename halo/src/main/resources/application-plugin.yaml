@@ -72,14 +72,14 @@ halo:
   workDir: ${user.home}/halo-dev/
   cache: memory
   plugin:
-    runtime-mode: deployment # development, deployment
+    runtime-mode: development # development, deployment
     enabled: true
     classes-directories:
       - "build/classes"
       - "build/resources"
     lib-directories:
       - "libs"
-    plugins-root: ${user.home}/halo-dev/plugins
+    #plugins-root: ${user.home}/halo-dev/plugins
     controller:
       base-path: plugins
     #    custom-plugin-loaders:

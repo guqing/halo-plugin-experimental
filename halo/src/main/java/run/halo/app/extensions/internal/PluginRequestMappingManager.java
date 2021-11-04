@@ -2,17 +2,12 @@ package run.halo.app.extensions.internal;
 
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
-import java.util.LinkedHashSet;
 import java.util.Set;
 import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
-import org.pf4j.PluginWrapper;
-import org.springframework.beans.BeansException;
 import org.springframework.context.ApplicationContext;
 import org.springframework.util.ReflectionUtils;
 import org.springframework.web.servlet.mvc.method.annotation.RequestMappingHandlerMapping;
-import run.halo.app.extensions.ExtController;
-import run.halo.app.extensions.ExtRestController;
 import run.halo.app.extensions.SpringPlugin;
 import run.halo.app.extensions.SpringPluginManager;
 
