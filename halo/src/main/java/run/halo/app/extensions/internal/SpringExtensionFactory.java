@@ -1,5 +1,6 @@
 package run.halo.app.extensions.internal;
 
+import static org.springframework.beans.factory.config.BeanDefinition.ROLE_APPLICATION;
 import static org.springframework.beans.factory.config.BeanDefinition.SCOPE_SINGLETON;
 
 import java.lang.reflect.Constructor;

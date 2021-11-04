@@ -144,4 +144,5 @@ public class ScanningExtensionFinder extends AbstractExtensionFinder {
 
         return result;
     }
+
 }

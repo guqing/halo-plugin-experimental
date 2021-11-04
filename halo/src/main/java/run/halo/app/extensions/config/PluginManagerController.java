@@ -32,10 +32,7 @@ public class PluginManagerController {
     public List<PluginInfo> list() {
         pluginManager.getExtensions(IHaloPlugin.class)
             .forEach(p -> {
-                System.out.println(p);
-                if(p != null) {
-                    System.out.println("--------------->" + p.saySomething());
-                }
+                System.out.println("--------------->" + p.saySomething());
             });
         List<PluginWrapper> loadedPlugins = pluginManager.getPlugins();
 

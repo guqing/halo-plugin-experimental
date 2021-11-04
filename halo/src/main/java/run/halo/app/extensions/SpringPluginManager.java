@@ -12,6 +12,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.pf4j.DefaultPluginManager;
 import org.pf4j.ExtensionFactory;
 import org.pf4j.ExtensionFinder;
+import org.pf4j.ExtensionWrapper;
 import org.pf4j.PluginDescriptorFinder;
 import org.pf4j.PluginRepository;
 import org.pf4j.PluginRuntimeException;
@@ -105,9 +106,60 @@ public class SpringPluginManager extends DefaultPluginManager
         this.extensionsInjector.injectExtensions();
     }
 
-
     public PluginStartingError getPluginStartingError(String pluginId) {
         return startingErrors.get(pluginId);
+    }
+
+    @Override
+    public <T> List<T> getExtensions(Class<T> type) {
+        return this.getExtensions(extensionFinder.find(type));
+    }
+
+    @Override
+    public <T> List<T> getExtensions(Class<T> type, String pluginId) {
+        return this.getExtensions(extensionFinder.find(type, pluginId));
+    }
+
+    @Override
+    @SuppressWarnings("unchecked")
+    public List getExtensions(String pluginId) {
+        List<ExtensionWrapper> extensionsWrapper = extensionFinder.find(pluginId);
+        List extensions = new ArrayList<>(extensionsWrapper.size());
+        for (ExtensionWrapper extensionWrapper : extensionsWrapper) {
+            try {
+                Object extension = getExtension(extensionWrapper);
+                extensions.add(extension);
+            } catch (PluginRuntimeException e) {
+                log.error("Cannot retrieve extension", e);
+            }
+        }
+
+        return extensions;
+    }
+
+    @NonNull
+    @SuppressWarnings("unchecked")
+    private synchronized <T> T getExtension(ExtensionWrapper<T> extensionWrapper) {
+        T extension = extensionWrapper.getExtension();
+        if (extension == null) {
+            Class<?> extensionClass = extensionWrapper.getDescriptor().extensionClass;
+            extension = (T) applicationContext.getBean(extensionClass);
+        }
+        return extension;
+    }
+
+    protected <T> List<T> getExtensions(List<ExtensionWrapper<T>> extensionsWrapper) {
+        List<T> extensions = new ArrayList<>(extensionsWrapper.size());
+        for (ExtensionWrapper<T> extensionWrapper : extensionsWrapper) {
+            try {
+                T extension = getExtension(extensionWrapper);
+                extensions.add(extension);
+            } catch (PluginRuntimeException e) {
+                log.error("Cannot retrieve extension", e);
+            }
+        }
+
+        return extensions;
     }
 
 
