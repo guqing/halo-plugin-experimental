@@ -214,4 +214,24 @@ public class ExtensionsInjector {
             return registry.containsKey(pluginId);
         }
     }
+
+    static class ClassDescriptor {
+        Class<?> clazz;
+        String name;
+        boolean isController;
+        boolean isListener;
+        boolean isBean;
+
+        public ClassDescriptor(Class<?> clazz) {
+            this.clazz = clazz;
+        }
+
+        public String getSimpleName() {
+            return getSimpleName(name);
+        }
+
+        static String getSimpleName(final String className) {
+            return className.substring(className.lastIndexOf('.') + 1);
+        }
+    }
 }
