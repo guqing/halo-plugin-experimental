@@ -1,26 +1,25 @@
-package run.halo.app.extensions.internal;
+package run.halo.app.extensions.event;
 
 import java.lang.reflect.Method;
 import org.springframework.context.ApplicationListener;
-import org.springframework.context.event.ApplicationListenerMethodAdapter;
 import org.springframework.context.event.EventListener;
 import org.springframework.context.event.EventListenerFactory;
 import org.springframework.core.Ordered;
 import org.springframework.lang.NonNull;
+import org.springframework.stereotype.Component;
 
 /**
- * Creating ApplicationListener for methods annotated with EventListener.
- *
  * @author guqing
- * @since 2021-11-05
+ * @since 2021-11-06
  */
+@Component
 public class PluginEventListenerFactory implements EventListenerFactory, Ordered {
 
     private int order = LOWEST_PRECEDENCE;
 
     @Override
     public boolean supportsMethod(@NonNull Method method) {
-        return false;
+        return true;
     }
 
     /**
@@ -34,7 +33,7 @@ public class PluginEventListenerFactory implements EventListenerFactory, Ordered
     @NonNull
     public ApplicationListener<?> createApplicationListener(@NonNull String beanName,
         @NonNull Class<?> type, @NonNull Method method) {
-        return new ApplicationListenerMethodAdapter(beanName, type, method);
+        return new PluginApplicationListenerMethodAdapter(beanName, type, method);
     }
 
     @Override

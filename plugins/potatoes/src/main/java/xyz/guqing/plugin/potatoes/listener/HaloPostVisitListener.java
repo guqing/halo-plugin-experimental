@@ -12,10 +12,10 @@ import run.halo.app.extensions.event.HaloPluginStateChangedEvent;
  */
 @Slf4j
 @Component
-public class HaloPostVisitEvent {
+public class HaloPostVisitListener {
 
     @EventListener(PostVisitEvent.class)
-    public void onPluginStarted(HaloPluginStateChangedEvent event) {
+    public void onPluginStarted(PostVisitEvent event) {
         System.out.println("\uD83D\uDC47\uD83D\uDC47\uD83D\uDC47\uD83D\uDC47\uD83D\uDC47\uD83D\uDC47\uD83D\uDC47");
         log.info("Plugin state [{}] is changed", event);
     }

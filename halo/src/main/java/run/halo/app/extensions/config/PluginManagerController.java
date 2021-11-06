@@ -84,7 +84,7 @@ public class PluginManagerController {
 
     @PostMapping(value = "${halo.plugin.controller.base-path:/plugins}/reload/{pluginId}")
     public int reload(@PathVariable String pluginId) {
-        PluginState pluginState = pluginManager.reloadPlugins(pluginId);
+        PluginState pluginState = pluginManager.reloadPlugin(pluginId);
         return pluginState == PluginState.STARTED ? 0 : 1;
     }
 

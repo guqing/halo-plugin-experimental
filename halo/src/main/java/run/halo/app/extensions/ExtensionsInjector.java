@@ -1,22 +1,27 @@
 package run.halo.app.extensions;
 
-import java.lang.annotation.Annotation;
+import com.google.common.collect.ImmutableSet;
+import java.lang.reflect.Method;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
+import java.util.stream.Collectors;
 import org.pf4j.PluginWrapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.context.ApplicationContext;
+import org.springframework.context.ApplicationListener;
+import org.springframework.context.event.EventListener;
+import org.springframework.core.annotation.AnnotatedElementUtils;
+import org.springframework.stereotype.Component;
+import org.springframework.stereotype.Controller;
 import org.springframework.util.Assert;
 import org.springframework.util.CollectionUtils;
-import run.halo.app.extensions.annotation.ExtController;
-import run.halo.app.extensions.annotation.ExtRestController;
 
 /**
  * @author guqing
@@ -40,7 +45,8 @@ public class ExtensionsInjector {
             Object existingBean = applicationContext.getBean(aClass);
             applicationContext.getAutowireCapableBeanFactory()
                 .destroyBean(existingBean);
-            log.debug("Destroyed plugin bean [{}] from application", existingBean);
+            log.debug("Destroyed plugin bean [{}] from application",
+                existingBean.getClass().getName());
         });
     }
 
@@ -51,7 +57,7 @@ public class ExtensionsInjector {
             .getAutowireCapableBeanFactory()
             .destroyBean(existingBean);
         injectedBeanRegistry.unregister(pluginId, existingBean.getClass());
-        log.debug("Removed bean [{}] from application", existingBean);
+        log.debug("Removed bean [{}] from application", existingBean.getClass().getName());
     }
 
     public void injectExtensions() {
@@ -109,11 +115,42 @@ public class ExtensionsInjector {
     }
 
     public Set<Class<?>> getControllers(String pluginId) {
-        Set<Class<?>> classes = this.injectedBeanRegistry.getControllerClassesByPluginId(pluginId);
-        if (CollectionUtils.isEmpty(classes)) {
-            return Collections.emptySet();
+        injectedBeanRegistry.acquireReadLock();
+        try {
+            Map<String, Set<ClassDescriptor>> registrations =
+                this.injectedBeanRegistry.getRegistrations();
+            if (!registrations.containsKey(pluginId)) {
+                return Collections.emptySet();
+            }
+            Set<Class<?>> classes = registrations.get(pluginId)
+                .stream()
+                .filter(clazz -> !clazz.isComponent())
+                .filter(ClassDescriptor::isController)
+                .map(ClassDescriptor::getTargetClass)
+                .collect(Collectors.toSet());
+            return ImmutableSet.copyOf(classes);
+        } finally {
+            injectedBeanRegistry.releaseReadLock();
         }
-        return new LinkedHashSet<>(classes);
+    }
+
+    public Set<Class<?>> getListenerClasses(String pluginId) {
+        injectedBeanRegistry.acquireReadLock();
+        try {
+            Map<String, Set<ClassDescriptor>> registrations =
+                this.injectedBeanRegistry.getRegistrations();
+            if (!registrations.containsKey(pluginId)) {
+                return Collections.emptySet();
+            }
+            Set<Class<?>> classes = registrations.get(pluginId)
+                .stream()
+                .filter(ClassDescriptor::isListener)
+                .map(ClassDescriptor::getTargetClass)
+                .collect(Collectors.toSet());
+            return ImmutableSet.copyOf(classes);
+        } finally {
+            injectedBeanRegistry.releaseReadLock();
+        }
     }
 
     /**
@@ -135,54 +172,47 @@ public class ExtensionsInjector {
 
     static class InjectedBeanRegistry {
 
-        private final Map<String, Set<Class<?>>> registry = new HashMap<>();
-        private final Map<String, Set<Class<?>>> controllerLookup = new ConcurrentHashMap<>();
+        private final Map<String, Set<ClassDescriptor>> registry = new HashMap<>();
         private final ReentrantReadWriteLock readWriteLock = new ReentrantReadWriteLock();
+
+        public Map<String, Set<ClassDescriptor>> getRegistrations() {
+            return this.registry;
+        }
+
+        /**
+         * Acquire the read lock when using getMappings and getMappingsByUrl.
+         */
+        public void acquireReadLock() {
+            this.readWriteLock.readLock().lock();
+        }
+
+        /**
+         * Release the read lock after using getMappings and getMappingsByUrl.
+         */
+        public void releaseReadLock() {
+            this.readWriteLock.readLock().unlock();
+        }
 
         public void register(String pluginId, Class<?> clazz) {
             this.readWriteLock.writeLock().lock();
             try {
-                Set<Class<?>> classSet =
+                ClassDescriptor classDescriptor = new ClassDescriptor(clazz);
+                Set<ClassDescriptor> classSet =
                     registry.computeIfAbsent(pluginId, key -> new LinkedHashSet<>());
-                classSet.add(clazz);
-
-                if (isController(clazz)) {
-                    Set<Class<?>> controllerClasses =
-                        controllerLookup.computeIfAbsent(pluginId, key -> new LinkedHashSet<>());
-                    controllerClasses.add(clazz);
-                }
+                classSet.add(classDescriptor);
             } finally {
                 this.readWriteLock.writeLock().unlock();
             }
         }
 
-        private boolean isController(Class<?> clazz) {
-            Annotation[] declaredAnnotations = clazz.getDeclaredAnnotations();
-            for (Annotation annotation : declaredAnnotations) {
-                Class<?> aClass = annotation.annotationType();
-                if (aClass.isAssignableFrom(ExtController.class)) {
-                    return true;
-                }
-                if (aClass.isAssignableFrom(ExtRestController.class)) {
-                    return true;
-                }
-            }
-            return false;
-        }
-
         public void unregister(String pluginId, Class<?> bean) {
             this.readWriteLock.writeLock().lock();
             try {
-                Set<Class<?>> classes = registry.get(pluginId);
+                Set<ClassDescriptor> classes = registry.get(pluginId);
                 if (CollectionUtils.isEmpty(classes)) {
                     return;
                 }
-                classes.remove(bean);
-                Set<Class<?>> controllers = controllerLookup.get(pluginId);
-                if (CollectionUtils.isEmpty(controllers)) {
-                    return;
-                }
-                controllers.remove(bean);
+                classes.remove(new ClassDescriptor(bean));
             } finally {
                 this.readWriteLock.writeLock().unlock();
             }
@@ -191,23 +221,16 @@ public class ExtensionsInjector {
         public Set<Class<?>> unregister(String pluginId) {
             this.readWriteLock.writeLock().lock();
             try {
-                Set<Class<?>> removed = registry.remove(pluginId);
+                Set<ClassDescriptor> removed = registry.remove(pluginId);
                 if (CollectionUtils.isEmpty(removed)) {
                     return Collections.emptySet();
                 }
-                controllerLookup.remove(pluginId);
-                return removed;
+                return removed.stream()
+                    .map(ClassDescriptor::getTargetClass)
+                    .collect(Collectors.toSet());
             } finally {
                 this.readWriteLock.writeLock().unlock();
             }
-        }
-
-        public Set<Class<?>> getControllerClassesByPluginId(String pluginId) {
-            return controllerLookup.get(pluginId);
-        }
-
-        public Set<Class<?>> getClassesByPluginId(String pluginId) {
-            return registry.get(pluginId);
         }
 
         public boolean containsPlugin(String pluginId) {
@@ -216,22 +239,84 @@ public class ExtensionsInjector {
     }
 
     static class ClassDescriptor {
-        Class<?> clazz;
+
+        final Class<?> clazz;
         String name;
         boolean isController;
         boolean isListener;
-        boolean isBean;
+        boolean isComponent;
 
-        public ClassDescriptor(Class<?> clazz) {
-            this.clazz = clazz;
+        public ClassDescriptor(Class<?> targetClass) {
+            Assert.notNull(targetClass, "The targetClass must not be null.");
+            this.clazz = targetClass;
+            init();
+        }
+
+        static String getSimpleName(final String className) {
+            return className.substring(className.lastIndexOf('.') + 1);
+        }
+
+        private void init() {
+            this.name = this.clazz.getName();
+
+            // Is it a controller?
+            this.isController = AnnotatedElementUtils.hasAnnotation(this.clazz, Controller.class);
+
+            // Specialized classes of @component include @service,@repository,@controller and etc.
+            this.isComponent = AnnotatedElementUtils.hasAnnotation(this.clazz, Component.class);
+
+            // Is it a listener?
+            if (ApplicationListener.class.isAssignableFrom(this.clazz)) {
+                this.isListener = true;
+            } else {
+                for (Method declaredMethod : clazz.getDeclaredMethods()) {
+                    if (AnnotatedElementUtils.hasAnnotation(declaredMethod, EventListener.class)) {
+                        this.isListener = true;
+                        break;
+                    }
+                }
+            }
         }
 
         public String getSimpleName() {
             return getSimpleName(name);
         }
 
-        static String getSimpleName(final String className) {
-            return className.substring(className.lastIndexOf('.') + 1);
+        public Class<?> getTargetClass() {
+            return clazz;
+        }
+
+        public String getName() {
+            return name;
+        }
+
+        public boolean isController() {
+            return isController;
+        }
+
+        public boolean isListener() {
+            return isListener;
+        }
+
+        public boolean isComponent() {
+            return isComponent;
+        }
+
+        @Override
+        public boolean equals(Object o) {
+            if (this == o) {
+                return true;
+            }
+            if (o == null || getClass() != o.getClass()) {
+                return false;
+            }
+            ClassDescriptor that = (ClassDescriptor) o;
+            return clazz.equals(that.clazz);
+        }
+
+        @Override
+        public int hashCode() {
+            return Objects.hash(clazz);
         }
     }
 }

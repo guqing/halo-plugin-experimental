@@ -1,6 +1,7 @@
 package run.halo.app.extensions.event;
 
-import org.springframework.context.ApplicationContext;
+import org.pf4j.PluginState;
+import org.pf4j.PluginWrapper;
 import org.springframework.context.ApplicationEvent;
 
 /**
@@ -11,9 +12,18 @@ import org.springframework.context.ApplicationEvent;
  */
 public class HaloPluginStoppedEvent extends ApplicationEvent {
 
-    private static final long serialVersionUID = 1048404352252169025L;
+    private final PluginWrapper plugin;
 
-    public HaloPluginStoppedEvent(ApplicationContext pluginApplicationContext) {
-        super(pluginApplicationContext);
+    public HaloPluginStoppedEvent(Object source, PluginWrapper plugin) {
+        super(source);
+        this.plugin = plugin;
+    }
+
+    public PluginWrapper getPlugin() {
+        return plugin;
+    }
+
+    public PluginState getPluginState() {
+        return plugin.getPluginState();
     }
 }

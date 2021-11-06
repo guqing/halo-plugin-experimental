@@ -47,9 +47,7 @@ public abstract class SpringPlugin extends Plugin {
 
         getRequestMappingManager().registerControllers(this);
 
-        applicationContext.publishEvent(new HaloPluginStartedEvent(applicationContext));
-        // if main application context is not ready, don't send restart event
-        applicationContext.publishEvent(new HaloPluginRestartedEvent(applicationContext));
+        applicationContext.publishEvent(new HaloPluginStartedEvent(this, getWrapper()));
 
         log.debug("Plugin {} is started in {}ms", getWrapper().getPluginId(),
             System.currentTimeMillis() - startTs);
@@ -66,9 +64,7 @@ public abstract class SpringPlugin extends Plugin {
         releaseAdditionalResources(pluginId);
 
         // send stopped event
-        applicationContext.publishEvent(new HaloPluginStoppedEvent(applicationContext));
-
-        log.debug("Plugin {} is stopped", getWrapper().getPluginId());
+        applicationContext.publishEvent(new HaloPluginStoppedEvent(this, getWrapper()));
     }
 
     public final ApplicationContext getApplicationContext() {

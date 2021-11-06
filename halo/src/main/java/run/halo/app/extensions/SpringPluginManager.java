@@ -23,14 +23,16 @@ import org.springframework.beans.BeansException;
 import org.springframework.beans.factory.InitializingBean;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.ApplicationContextAware;
+import org.springframework.context.ApplicationListener;
+import org.springframework.context.support.AbstractApplicationContext;
 import org.springframework.lang.NonNull;
 import run.halo.app.extensions.config.model.PluginStartingError;
 import run.halo.app.extensions.event.HaloPluginStateChangedEvent;
+import run.halo.app.extensions.internal.PluginListenerRegistry;
 
 /**
  * PluginManager to hold the main ApplicationContext
  *
- * @author Hank CP
  * @author guqing
  */
 @Slf4j
@@ -42,6 +44,7 @@ public class SpringPluginManager extends DefaultPluginManager
     private boolean autoStartPlugin = true;
     private PluginRepository pluginRepository;
     private ExtensionsInjector extensionsInjector;
+    private PluginListenerRegistry listenerRegistry;
 
     public SpringPluginManager() {
         super();
@@ -98,12 +101,23 @@ public class SpringPluginManager extends DefaultPluginManager
         this.applicationContext = applicationContext;
     }
 
+    public PluginListenerRegistry getListenerRegistry() {
+        return listenerRegistry;
+    }
+
+    public void setListenerRegistry(PluginListenerRegistry listenerRegistry) {
+        this.listenerRegistry = listenerRegistry;
+    }
+
     @Override
     public void afterPropertiesSet() {
         // This method load, start plugins and inject extensions in Spring
         loadPlugins();
         this.extensionsInjector = new ExtensionsInjector(this);
         this.extensionsInjector.injectExtensions();
+
+        // create listener registry
+        this.listenerRegistry = new PluginListenerRegistry(this.applicationContext);
     }
 
     public PluginStartingError getPluginStartingError(String pluginId) {
@@ -167,6 +181,17 @@ public class SpringPluginManager extends DefaultPluginManager
         return this.extensionsInjector.getControllers(pluginId);
     }
 
+    public void registerListenerBy(String pluginId) {
+        Set<Class<?>> listeners = this.extensionsInjector.getListenerClasses(pluginId);
+        for (Class<?> listener : listeners) {
+            listenerRegistry.addPluginListener(pluginId, listener);
+        }
+    }
+
+    public void unregisterListenerBy(String pluginId) {
+        this.listenerRegistry.removePluginListener(pluginId);
+    }
+
     // region Plugin State Manipulation
     private void doStartPlugins() {
         startingErrors.clear();
@@ -228,6 +253,13 @@ public class SpringPluginManager extends DefaultPluginManager
         }
     }
 
+    @Override
+    protected synchronized void firePluginStateEvent(PluginStateEvent event) {
+        applicationContext.publishEvent(
+            new HaloPluginStateChangedEvent(this, event.getPlugin(), event.getOldState()));
+        super.firePluginStateEvent(event);
+    }
+
     private PluginState doStartPlugin(String pluginId, boolean sendEvent) {
         PluginWrapper plugin = getPlugin(pluginId);
         PluginState previousState = plugin.getPluginState();
@@ -238,7 +270,7 @@ public class SpringPluginManager extends DefaultPluginManager
             PluginState pluginState = super.startPlugin(pluginId);
             if (sendEvent && previousState != pluginState) {
                 applicationContext.publishEvent(
-                    new HaloPluginStateChangedEvent(applicationContext));
+                    new HaloPluginStateChangedEvent(this, plugin, previousState));
             }
             return pluginState;
         } catch (Exception e) {
@@ -257,7 +289,7 @@ public class SpringPluginManager extends DefaultPluginManager
             PluginState pluginState = super.stopPlugin(pluginId);
             if (sendEvent && previousState != pluginState) {
                 applicationContext.publishEvent(
-                    new HaloPluginStateChangedEvent(applicationContext));
+                    new HaloPluginStateChangedEvent(this, plugin, previousState));
             }
             return pluginState;
         } catch (Exception e) {
@@ -271,7 +303,6 @@ public class SpringPluginManager extends DefaultPluginManager
     @Override
     public void startPlugins() {
         doStartPlugins();
-        applicationContext.publishEvent(new HaloPluginStateChangedEvent(applicationContext));
     }
 
     @Override
@@ -282,27 +313,15 @@ public class SpringPluginManager extends DefaultPluginManager
     @Override
     public void stopPlugins() {
         doStopPlugins();
-        applicationContext.publishEvent(new HaloPluginStateChangedEvent(applicationContext));
     }
 
     @Override
     public PluginState stopPlugin(String pluginId) {
-        return doStopPlugin(pluginId, true);
-    }
-
-    public void restartPlugins() {
-        doStopPlugins();
-        startPlugins();
-    }
-
-    public PluginState restartPlugin(String pluginId) {
-        PluginState pluginState = doStopPlugin(pluginId, false);
-        if (pluginState != PluginState.STARTED) {
-            doStartPlugin(pluginId, false);
+        AbstractApplicationContext context = (AbstractApplicationContext)getApplicationContext();
+        for (ApplicationListener<?> applicationListener : context.getApplicationListeners()) {
+            System.out.println(applicationListener);
         }
-        doStartPlugin(pluginId, false);
-        applicationContext.publishEvent(new HaloPluginStateChangedEvent(applicationContext));
-        return pluginState;
+        return doStopPlugin(pluginId, true);
     }
 
     public void reloadPlugins(boolean restartStartedOnly) {
@@ -322,13 +341,12 @@ public class SpringPluginManager extends DefaultPluginManager
                     doStartPlugin(pluginId, false);
                 }
             });
-            applicationContext.publishEvent(new HaloPluginStateChangedEvent(applicationContext));
         } else {
             startPlugins();
         }
     }
 
-    public PluginState reloadPlugins(String pluginId) {
+    public PluginState reloadPlugin(String pluginId) {
         PluginWrapper plugin = getPlugin(pluginId);
         doStopPlugin(pluginId, false);
         unloadPlugin(pluginId, false);

@@ -1,24 +1,35 @@
 package run.halo.app.extensions.event;
 
-import org.springframework.context.ApplicationContext;
+import org.pf4j.PluginState;
+import org.pf4j.PluginWrapper;
 import org.springframework.context.ApplicationEvent;
 
 /**
- * This event will be published to <b>main app application context</b> when any plugin is changed in
- * batch. Plugins' state might be manipulated in batch, like start up with main app/restart all,
- * etc. This event is useful if you need to do something after all plugin manipulation is done.
- * <br>
- * For example. When plugin jar file get updated, the previous register classloader will not be able
- * to access its resource file anymore. For batch plugin jar files updating, refreshing stuffs could
- * only be done after all plugins reloaded and new plugin classloaders provided.
+ * Plugin state changed event.
  *
- * @author <a href="https://github.com/hank-cp">Hank CP</a>
+ * @author guqing
+ * @date 2021-11-06
  */
 public class HaloPluginStateChangedEvent extends ApplicationEvent {
 
-    private static final long serialVersionUID = 1653148906452766719L;
+    private final PluginWrapper plugin;
+    private final PluginState oldState;
 
-    public HaloPluginStateChangedEvent(ApplicationContext mainApplicationContext) {
-        super(mainApplicationContext);
+    public HaloPluginStateChangedEvent(Object source, PluginWrapper wrapper, PluginState oldState) {
+        super(source);
+        this.plugin = wrapper;
+        this.oldState = oldState;
+    }
+
+    public PluginWrapper getPlugin() {
+        return plugin;
+    }
+
+    public PluginState getOldState() {
+        return oldState;
+    }
+
+    public PluginState getState() {
+        return this.plugin.getPluginState();
     }
 }
