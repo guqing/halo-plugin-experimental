@@ -6,7 +6,24 @@ package run.halo.app.extensions.extpoint;
  */
 public interface IHaloPlugin {
 
+    /**
+     * plugin name.
+     *
+     * @return a plugin name
+     */
     String getName();
 
-    String saySomething();
+    /**
+     * plugin logo.
+     *
+     * @return plugin logo url.
+     */
+    String logo();
+
+    /**
+     * plugin description.
+     *
+     * @return plugin description.
+     */
+    String description();
 }

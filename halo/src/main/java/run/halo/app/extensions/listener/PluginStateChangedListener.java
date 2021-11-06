@@ -11,6 +11,7 @@ import run.halo.app.extensions.SpringPluginManager;
 import run.halo.app.extensions.config.PluginProperties;
 import run.halo.app.extensions.event.HaloPluginStartedEvent;
 import run.halo.app.extensions.event.HaloPluginStoppedEvent;
+import run.halo.app.extensions.extpoint.ExtensionPointDiscover;
 
 /**
  * Halo plugin state changed listener for Spring Boot.
@@ -26,10 +27,13 @@ public class PluginStateChangedListener {
 
     @Autowired
     private SpringPluginManager springPluginManager;
+    @Autowired
+    private ExtensionPointDiscover extensionPointDiscover;
 
     @EventListener(HaloPluginStartedEvent.class)
     public void onPluginStarted(HaloPluginStartedEvent event) {
         springPluginManager.registerListenerBy(event.getPlugin().getPluginId());
+        extensionPointDiscover.register(springPluginManager.getExtensions(event.getPlugin().getPluginId()));
         log.info("The plugin starts successfully.");
     }
 

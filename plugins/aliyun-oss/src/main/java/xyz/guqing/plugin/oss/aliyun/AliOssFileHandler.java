@@ -1,4 +1,4 @@
-package run.halo.app.handler.file;
+package xyz.guqing.plugin.oss.aliyun;
 
 import static run.halo.app.model.support.HaloConst.URL_SEPARATOR;
 
@@ -15,6 +15,8 @@ import org.springframework.stereotype.Component;
 import org.springframework.util.Assert;
 import org.springframework.web.multipart.MultipartFile;
 import run.halo.app.exception.FileOperationException;
+import run.halo.app.handler.file.FileHandler;
+import run.halo.app.handler.file.FilePathDescriptor;
 import run.halo.app.model.enums.AttachmentType;
 import run.halo.app.model.properties.AliOssProperties;
 import run.halo.app.model.support.UploadResult;

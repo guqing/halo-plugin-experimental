@@ -14,20 +14,18 @@ import run.halo.app.service.PostService;
 @Extension
 public class HaloPlugin implements IHaloPlugin {
 
-    @Autowired
-    private PostService postService;
-
     @Override
     public String getName() {
         return "Potatoes";
     }
 
     @Override
-    public String saySomething() {
-        return "I wrote these articles: " + postService.listAll()
-            .stream()
-            .map(Post::getTitle)
-            .collect(Collectors.joining(","));
+    public String logo() {
+        return null;
     }
 
+    @Override
+    public String description() {
+        return null;
+    }
 }

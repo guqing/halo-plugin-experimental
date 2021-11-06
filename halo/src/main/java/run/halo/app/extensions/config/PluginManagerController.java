@@ -14,7 +14,6 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RestController;
 import run.halo.app.extensions.SpringPluginManager;
 import run.halo.app.extensions.config.model.PluginInfo;
-import run.halo.app.extensions.extpoint.IHaloPlugin;
 
 /**
  * Plugin manager controller.
@@ -30,10 +29,6 @@ public class PluginManagerController {
 
     @GetMapping(value = "${halo.plugin.controller.base-path:/plugins}/list")
     public List<PluginInfo> list() {
-        pluginManager.getExtensions(IHaloPlugin.class)
-            .forEach(p -> {
-                System.out.println("--------------->" + p.saySomething());
-            });
         List<PluginWrapper> loadedPlugins = pluginManager.getPlugins();
 
         // loaded plugins

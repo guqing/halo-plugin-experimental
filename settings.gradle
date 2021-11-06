@@ -7,4 +7,6 @@ include 'plugins:potatoes'
 findProject(':plugins:potatoes')?.name = 'potatoes'
 include 'plugins:potatoes'
 findProject(':plugins:potatoes')?.name = 'potatoes'
+include 'plugins:aliyun-oss'
+findProject(':plugins:aliyun-oss')?.name = 'aliyun-oss'
 

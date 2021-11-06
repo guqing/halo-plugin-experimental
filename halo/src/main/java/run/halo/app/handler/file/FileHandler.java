@@ -8,6 +8,7 @@ import java.io.InputStream;
 import java.util.function.Supplier;
 import javax.imageio.ImageReader;
 import org.apache.commons.lang3.StringUtils;
+import org.pf4j.ExtensionPoint;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.MediaType;
 import org.springframework.lang.NonNull;
@@ -25,7 +26,7 @@ import run.halo.app.utils.ImageUtils;
  * @author johnniang
  * @date 2019-03-27
  */
-public interface FileHandler {
+public interface FileHandler extends ExtensionPoint {
 
     MediaType IMAGE_TYPE = MediaType.valueOf("image/*");
 

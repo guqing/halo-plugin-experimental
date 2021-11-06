@@ -3,7 +3,9 @@ package run.halo.app.handler.file;
 import java.util.Collection;
 import java.util.concurrent.ConcurrentHashMap;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationContext;
+import org.springframework.context.event.EventListener;
 import org.springframework.lang.NonNull;
 import org.springframework.lang.Nullable;
 import org.springframework.stereotype.Component;
@@ -12,6 +14,8 @@ import org.springframework.util.CollectionUtils;
 import org.springframework.web.multipart.MultipartFile;
 import run.halo.app.exception.FileOperationException;
 import run.halo.app.exception.RepeatTypeException;
+import run.halo.app.extensions.event.HaloPluginStartedEvent;
+import run.halo.app.extensions.extpoint.ExtensionPointDiscover;
 import run.halo.app.model.entity.Attachment;
 import run.halo.app.model.enums.AttachmentType;
 import run.halo.app.model.support.UploadResult;
@@ -25,18 +29,26 @@ import run.halo.app.model.support.UploadResult;
 @Slf4j
 @Component
 public class FileHandlers {
-
+    @Autowired
+    private ExtensionPointDiscover extensionPointDiscover;
     /**
      * File handler container.
      */
     private final ConcurrentHashMap<AttachmentType, FileHandler> fileHandlers =
         new ConcurrentHashMap<>(16);
 
-    public FileHandlers(ApplicationContext applicationContext) {
+    public FileHandlers(ExtensionPointDiscover extensionPointDiscover) {
+        addFileHandlers(extensionPointDiscover.getComponents(FileHandler.class));
         // Add all file handler
-        addFileHandlers(applicationContext.getBeansOfType(FileHandler.class).values());
+        //addFileHandlers(applicationContext.getBeansOfType(FileHandler.class).values());
         log.info("Registered {} file handler(s)", fileHandlers.size());
     }
+
+    @EventListener(HaloPluginStartedEvent.class)
+    public void onPluginStarted(HaloPluginStartedEvent event) {
+        log.info("The plugin starts successfully.");
+    }
+
 
     /**
      * Uploads files.

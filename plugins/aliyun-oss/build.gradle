@@ -1,0 +1,35 @@
+plugins {
+    id 'java'
+}
+
+group 'xyz.guqing.plugin'
+version '1.0-SNAPSHOT'
+
+bootJar{
+    enabled = false
+}
+
+jar{
+    enabled = true
+}
+
+ext {
+    aliyunSdkVersion = "3.11.3"
+    commonsLangVersion = "3.10"
+}
+dependencies {
+    compileOnly project(':halo')
+
+    implementation "org.springframework.boot:spring-boot-starter-web"
+    implementation "org.springframework.boot:spring-boot-starter-data-jpa"
+
+    implementation "com.aliyun.oss:aliyun-sdk-oss:$aliyunSdkVersion"
+    implementation "org.apache.commons:commons-lang3:$commonsLangVersion"
+
+    testImplementation 'org.junit.jupiter:junit-jupiter-api:5.7.0'
+    testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine:5.7.0'
+}
+
+test {
+    useJUnitPlatform()
+}
