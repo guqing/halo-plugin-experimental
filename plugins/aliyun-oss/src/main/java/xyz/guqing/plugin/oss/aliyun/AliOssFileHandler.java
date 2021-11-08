@@ -9,6 +9,7 @@ import com.aliyun.oss.model.PutObjectResult;
 import java.util.Objects;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
+import org.pf4j.Extension;
 import org.springframework.http.MediaType;
 import org.springframework.lang.NonNull;
 import org.springframework.stereotype.Component;
@@ -34,6 +35,7 @@ import run.halo.app.utils.ImageUtils;
  */
 @Slf4j
 @Component
+@Extension
 public class AliOssFileHandler implements FileHandler {
 
     private final OptionService optionService;

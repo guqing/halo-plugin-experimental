@@ -202,21 +202,21 @@ public class SpringExtensionFactory implements ExtensionFactory {
 
         if (plugin instanceof SpringPlugin) {
             log.debug(
-                "  Extension class ' " + nameOf(extensionClass) + "' belongs to spring-plugin '"
+                "  Extension class ' " + nameOf(extensionClass) + "' belongs to halo-plugin '"
                     + nameOf(plugin)
                     + "' and will be autowired by using its application context.");
             applicationContext = ((SpringPlugin) plugin).getApplicationContext();
         } else if (this.pluginManager instanceof SpringPluginManager) {
             log.debug("  Extension class ' " + nameOf(extensionClass)
-                + "' belongs to a non spring-plugin (or main application)" +
+                + "' belongs to a non halo-plugin (or main application)" +
                 " '" + nameOf(plugin)
-                + ", but the used PF4J plugin-manager is a spring-plugin-manager. Therefore" +
+                + ", but the used Halo plugin-manager is a spring-plugin-manager. Therefore" +
                 " the extension class will be autowired by using the managers application contexts");
             applicationContext = ((SpringPluginManager) this.pluginManager).getApplicationContext();
         } else {
             log.warn("  No application contexts can be used for instantiating extension class '"
                 + nameOf(extensionClass) + "'."
-                + " This extension neither belongs to a PF4J spring-plugin (id: '" + nameOf(plugin)
+                + " This extension neither belongs to a halo-plugin (id: '" + nameOf(plugin)
                 + "') nor is the used" +
                 " plugin manager a spring-plugin-manager (used manager: '" + nameOf(
                 this.pluginManager.getClass()) + "')." +

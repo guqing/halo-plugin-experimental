@@ -5,10 +5,10 @@ import java.lang.reflect.Method;
 import java.util.Set;
 import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
+import org.pf4j.PluginWrapper;
 import org.springframework.context.ApplicationContext;
 import org.springframework.util.ReflectionUtils;
 import org.springframework.web.servlet.mvc.method.annotation.RequestMappingHandlerMapping;
-import run.halo.app.extensions.SpringPlugin;
 import run.halo.app.extensions.SpringPluginManager;
 
 /**
@@ -27,9 +27,9 @@ public class PluginRequestMappingManager {
         this.requestMappingHandlerMapping = requestMappingHandlerMapping;
     }
 
-    public void registerControllers(SpringPlugin springBootPlugin) {
-        String pluginId = springBootPlugin.getWrapper().getPluginId();
-        getControllerBeans(springBootPlugin.getPluginManager(), pluginId)
+    public void registerControllers(PluginWrapper pluginWrapper) {
+        String pluginId = pluginWrapper.getPluginId();
+        getControllerBeans((SpringPluginManager) pluginWrapper.getPluginManager(), pluginId)
             .forEach(this::registerController);
     }
 
@@ -57,7 +57,8 @@ public class PluginRequestMappingManager {
         requestMappingHandlerMapping.getHandlerMethods()
             .forEach((mapping, handlerMethod) -> {
                 if (controller == handlerMethod.getBean()) {
-                    log.debug("Removed plugin request mapping [{}] from bean [{}]", mapping, controller);
+                    log.debug("Removed plugin request mapping [{}] from bean [{}]", mapping,
+                        controller);
                     requestMappingHandlerMapping.unregisterMapping(mapping);
                 }
             });
