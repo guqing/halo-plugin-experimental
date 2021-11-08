@@ -15,7 +15,6 @@ import org.springframework.web.multipart.MultipartFile;
 import run.halo.app.exception.FileOperationException;
 import run.halo.app.exception.RepeatTypeException;
 import run.halo.app.extensions.event.HaloPluginStartedEvent;
-import run.halo.app.extensions.extpoint.ExtensionPointDiscover;
 import run.halo.app.model.entity.Attachment;
 import run.halo.app.model.enums.AttachmentType;
 import run.halo.app.model.support.UploadResult;
@@ -29,26 +28,18 @@ import run.halo.app.model.support.UploadResult;
 @Slf4j
 @Component
 public class FileHandlers {
-    @Autowired
-    private ExtensionPointDiscover extensionPointDiscover;
+
     /**
      * File handler container.
      */
     private final ConcurrentHashMap<AttachmentType, FileHandler> fileHandlers =
         new ConcurrentHashMap<>(16);
 
-    public FileHandlers(ExtensionPointDiscover extensionPointDiscover) {
-        addFileHandlers(extensionPointDiscover.getComponents(FileHandler.class));
+    public FileHandlers(ApplicationContext applicationContext) {
         // Add all file handler
-        //addFileHandlers(applicationContext.getBeansOfType(FileHandler.class).values());
+        addFileHandlers(applicationContext.getBeansOfType(FileHandler.class).values());
         log.info("Registered {} file handler(s)", fileHandlers.size());
     }
-
-    @EventListener(HaloPluginStartedEvent.class)
-    public void onPluginStarted(HaloPluginStartedEvent event) {
-        log.info("The plugin starts successfully.");
-    }
-
 
     /**
      * Uploads files.

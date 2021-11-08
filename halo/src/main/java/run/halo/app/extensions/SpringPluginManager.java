@@ -8,6 +8,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.locks.ReentrantLock;
 import lombok.extern.slf4j.Slf4j;
 import org.pf4j.DefaultPluginManager;
 import org.pf4j.ExtensionFactory;
@@ -37,6 +38,7 @@ import run.halo.app.extensions.internal.PluginRequestMappingManager;
  * PluginManager to hold the main ApplicationContext
  *
  * @author guqing
+ * @date 2021-11-01
  */
 @Slf4j
 public class SpringPluginManager extends DefaultPluginManager
@@ -49,6 +51,7 @@ public class SpringPluginManager extends DefaultPluginManager
     private ExtensionsInjector extensionsInjector;
     private PluginListenerRegistry listenerRegistry;
     private PluginRequestMappingManager requestMappingManager;
+    private final ReentrantLock lock = new ReentrantLock();
 
     public SpringPluginManager() {
         super();
@@ -56,6 +59,14 @@ public class SpringPluginManager extends DefaultPluginManager
 
     public SpringPluginManager(Path pluginsRoot) {
         super(pluginsRoot);
+    }
+
+    public void acquireLock() {
+        this.lock.lock();
+    }
+
+    public void releaseLock() {
+        this.lock.unlock();
     }
 
     @Override
