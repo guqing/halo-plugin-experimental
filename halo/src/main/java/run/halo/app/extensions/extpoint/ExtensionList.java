@@ -78,14 +78,18 @@ public class ExtensionList<T> extends AbstractList<T> {
     }
 
 
+    @SuppressWarnings("unchecked")
     private List<ExtensionComponent<T>> ensureLoaded() {
         if (extensions != null) {
             return extensions; // already loaded
         }
         pluginManager.acquireLock();
         try {
-            List<ExtensionComponent<T>> collect = pluginManager.getExtensions(extensionType)
+            List<ExtensionComponent<T>> collect = pluginManager.getExtensionsInjector()
+                .getAllExtPoints()
                 .stream()
+                .filter(extensionType::isAssignableFrom)
+                .map(t -> (T) pluginManager.getApplicationContext().getBean(t))
                 .map(ExtensionComponent::create)
                 .collect(Collectors.toList());
             this.extensions = sort(collect);

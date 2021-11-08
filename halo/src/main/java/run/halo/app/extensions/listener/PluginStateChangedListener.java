@@ -11,6 +11,7 @@ import run.halo.app.extensions.SpringPluginManager;
 import run.halo.app.extensions.config.PluginProperties;
 import run.halo.app.extensions.event.HaloPluginStartedEvent;
 import run.halo.app.extensions.event.HaloPluginStoppedEvent;
+import run.halo.app.extensions.extpoint.ExtensionPointFinder;
 import run.halo.app.handler.file.FileHandler;
 
 /**
@@ -26,18 +27,23 @@ import run.halo.app.handler.file.FileHandler;
 public class PluginStateChangedListener {
 
     @Autowired
+    private ExtensionPointFinder extensionPointFinder;
+
+    @Autowired
     private SpringPluginManager springPluginManager;
 
     @EventListener(HaloPluginStartedEvent.class)
     public void onPluginStarted(HaloPluginStartedEvent event) {
         System.out.println(event.getPlugin().getPluginManager().getExtensions(FileHandler.class));
         springPluginManager.registerListenerBy(event.getPlugin().getPluginId());
+        this.extensionPointFinder.refreshExtensions();
         log.info("The plugin starts successfully.");
     }
 
     @EventListener(HaloPluginStoppedEvent.class)
     public void onPluginStopped(HaloPluginStoppedEvent event) {
         springPluginManager.unregisterListenerBy(event.getPlugin().getPluginId());
+        this.extensionPointFinder.refreshExtensions();
         log.info("Plugin {} is stopped", event.getPlugin().getPluginId());
     }
 }

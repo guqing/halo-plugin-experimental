@@ -2,6 +2,7 @@ package run.halo.app.extensions;
 
 import com.google.common.collect.ImmutableSet;
 import java.lang.reflect.Method;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.LinkedHashSet;
@@ -11,6 +12,7 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 import java.util.stream.Collectors;
+import org.pf4j.ExtensionPoint;
 import org.pf4j.PluginWrapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -170,6 +172,22 @@ public class ExtensionsInjector {
         }
     }
 
+    public Set<Class<?>> getAllExtPoints() {
+        injectedBeanRegistry.acquireReadLock();
+        try {
+            Set<Class<?>> classes = this.injectedBeanRegistry.getRegistrations().values()
+                .stream()
+                .flatMap(Collection::stream)
+                .filter(ClassDescriptor::isExtPoint)
+                .map(ClassDescriptor::getTargetClass)
+                .collect(Collectors.toSet());
+
+            return ImmutableSet.copyOf(classes);
+        } finally {
+            injectedBeanRegistry.releaseReadLock();
+        }
+    }
+
     static class InjectedBeanRegistry {
 
         private final Map<String, Set<ClassDescriptor>> registry = new HashMap<>();
@@ -245,6 +263,7 @@ public class ExtensionsInjector {
         boolean isController;
         boolean isListener;
         boolean isComponent;
+        boolean isExtPoint;
 
         public ClassDescriptor(Class<?> targetClass) {
             Assert.notNull(targetClass, "The targetClass must not be null.");
@@ -264,6 +283,8 @@ public class ExtensionsInjector {
 
             // Specialized classes of @component include @service,@repository,@controller and etc.
             this.isComponent = AnnotatedElementUtils.hasAnnotation(this.clazz, Component.class);
+
+            this.isExtPoint = ExtensionPoint.class.isAssignableFrom(this.clazz);
 
             // Is it a listener?
             if (ApplicationListener.class.isAssignableFrom(this.clazz)) {
@@ -300,6 +321,10 @@ public class ExtensionsInjector {
 
         public boolean isComponent() {
             return isComponent;
+        }
+
+        public boolean isExtPoint() {
+            return isExtPoint;
         }
 
         @Override
