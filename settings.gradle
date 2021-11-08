@@ -9,4 +9,6 @@ include 'plugins:potatoes'
 findProject(':plugins:potatoes')?.name = 'potatoes'
 include 'plugins:aliyun-oss'
 findProject(':plugins:aliyun-oss')?.name = 'aliyun-oss'
+include 'plugins:local-store'
+findProject(':plugins:local-store')?.name = 'local-store'
 

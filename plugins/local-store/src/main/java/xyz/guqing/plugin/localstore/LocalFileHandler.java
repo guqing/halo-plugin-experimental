@@ -1,6 +1,4 @@
-package run.halo.app.handler.file;
-
-import static run.halo.app.model.support.HaloConst.FILE_SEPARATOR;
+package xyz.guqing.plugin.localstore;
 
 import java.awt.image.BufferedImage;
 import java.io.IOException;
@@ -19,7 +17,10 @@ import org.springframework.util.Assert;
 import org.springframework.web.multipart.MultipartFile;
 import run.halo.app.config.properties.HaloProperties;
 import run.halo.app.exception.FileOperationException;
+import run.halo.app.handler.file.FileHandler;
+import run.halo.app.handler.file.FilePathDescriptor;
 import run.halo.app.model.enums.AttachmentType;
+import run.halo.app.model.support.HaloConst;
 import run.halo.app.model.support.UploadResult;
 import run.halo.app.repository.AttachmentRepository;
 import run.halo.app.utils.FilenameUtils;
@@ -92,7 +93,7 @@ public class LocalFileHandler implements FileHandler {
         FilePathDescriptor uploadFilePath = new FilePathDescriptor.Builder()
             .setBasePath(workDir)
             .setSubPath(generatePath())
-            .setSeparator(FILE_SEPARATOR)
+            .setSeparator(HaloConst.FILE_SEPARATOR)
             .setAutomaticRename(true)
             .setRenamePredicate(relativePath ->
                 attachmentRepository
@@ -127,7 +128,7 @@ public class LocalFileHandler implements FileHandler {
                 FilePathDescriptor thumbnailFilePath = new FilePathDescriptor.Builder()
                     .setBasePath(workDir)
                     .setSubPath(uploadFilePath.getSubPath())
-                    .setSeparator(FILE_SEPARATOR)
+                    .setSeparator(HaloConst.FILE_SEPARATOR)
                     .setOriginalName(uploadFilePath.getFullName())
                     .setNameSuffix(THUMBNAIL_SUFFIX)
                     .build();
@@ -205,7 +206,8 @@ public class LocalFileHandler implements FileHandler {
         String monthString = month < 10 ? "0" + month : String.valueOf(month);
 
         // Build directory
-        return UPLOAD_SUB_DIR + year + FILE_SEPARATOR + monthString + FILE_SEPARATOR;
+        return UPLOAD_SUB_DIR + year + HaloConst.FILE_SEPARATOR + monthString
+            + HaloConst.FILE_SEPARATOR;
     }
 
     private boolean generateThumbnail(BufferedImage originalImage, Path thumbPath,
