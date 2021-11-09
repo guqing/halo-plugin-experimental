@@ -34,7 +34,6 @@ public class PluginStateChangedListener {
 
     @EventListener(HaloPluginStartedEvent.class)
     public void onPluginStarted(HaloPluginStartedEvent event) {
-        System.out.println(event.getPlugin().getPluginManager().getExtensions(FileHandler.class));
         springPluginManager.registerListenerBy(event.getPlugin().getPluginId());
         this.extensionPointFinder.refreshExtensions();
         log.info("The plugin starts successfully.");

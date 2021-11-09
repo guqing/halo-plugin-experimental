@@ -309,8 +309,11 @@ public class SpringPluginManager extends DefaultPluginManager
                     log.info("Start plugin '{}'", getPluginLabel(pluginWrapper.getDescriptor()));
                     // inject bean
                     extensionsInjector.injectExtensionByPluginId(pluginWrapper.getPluginId());
+
                     pluginWrapper.getPlugin().start();
+
                     requestMappingManager.registerControllers(pluginWrapper);
+
                     pluginWrapper.setPluginState(PluginState.STARTED);
                     pluginWrapper.setFailedException(null);
                     startedPlugins.add(pluginWrapper);
@@ -386,7 +389,10 @@ public class SpringPluginManager extends DefaultPluginManager
         try {
             // inject bean
             extensionsInjector.injectExtensionByPluginId(pluginId);
+
             pluginWrapper.getPlugin().start();
+
+            requestMappingManager.registerControllers(pluginWrapper);
             pluginWrapper.setPluginState(PluginState.STARTED);
             startedPlugins.add(pluginWrapper);
 

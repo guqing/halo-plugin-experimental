@@ -126,7 +126,6 @@ public class ExtensionsInjector {
             }
             Set<Class<?>> classes = registrations.get(pluginId)
                 .stream()
-                .filter(clazz -> !clazz.isComponent())
                 .filter(ClassDescriptor::isController)
                 .map(ClassDescriptor::getTargetClass)
                 .collect(Collectors.toSet());
