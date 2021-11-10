@@ -31,7 +31,9 @@ import run.halo.app.extensions.event.PluginEventExpressionEvaluator;
  */
 @Slf4j
 public class PluginListenerRegistry {
-    private final Map<String, List<ApplicationListener<?>>> listenerRegistrations = new ConcurrentHashMap<>();
+
+    private final Map<String, List<ApplicationListener<?>>> listenerRegistrations =
+        new ConcurrentHashMap<>();
     private final PluginEventExpressionEvaluator evaluator = new PluginEventExpressionEvaluator();
     private final AbstractApplicationContext applicationContext;
 
@@ -78,8 +80,6 @@ public class PluginListenerRegistry {
             return;
         }
         for (ApplicationListener<?> pluginListener : pluginListeners) {
-            // destroy possible proxy ApplicationListener object residues
-            applicationContext.getAutowireCapableBeanFactory().destroyBean(pluginListener);
             if (applicationContext.getApplicationListeners().remove(pluginListener)) {
                 log.debug("Removed listener [{}] for plugin [{}].", pluginListener, pluginId);
             }

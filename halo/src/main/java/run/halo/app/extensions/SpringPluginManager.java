@@ -45,13 +45,13 @@ public class SpringPluginManager extends DefaultPluginManager
     implements ApplicationContextAware, InitializingBean {
 
     private final Map<String, PluginStartingError> startingErrors = new HashMap<>();
+    private final ReentrantLock lock = new ReentrantLock();
     private ApplicationContext applicationContext;
     private boolean autoStartPlugin = true;
     private PluginRepository pluginRepository;
     private ExtensionsInjector extensionsInjector;
     private PluginListenerRegistry listenerRegistry;
     private PluginRequestMappingManager requestMappingManager;
-    private final ReentrantLock lock = new ReentrantLock();
 
     public SpringPluginManager() {
         super();
@@ -134,7 +134,7 @@ public class SpringPluginManager extends DefaultPluginManager
         this.requestMappingManager = applicationContext.getBean(PluginRequestMappingManager.class);
 
         // create listener registry
-        this.listenerRegistry = new PluginListenerRegistry(this.applicationContext);
+        this.listenerRegistry = new PluginListenerRegistry(applicationContext);
     }
 
     public PluginStartingError getPluginStartingError(String pluginId) {
@@ -199,7 +199,7 @@ public class SpringPluginManager extends DefaultPluginManager
     }
 
     public void registerListenerBy(String pluginId) {
-        Set<Class<?>> listeners = this.extensionsInjector.getListenerClasses(pluginId);
+        List<Class<?>> listeners = this.extensionsInjector.getListenerClasses(pluginId);
         for (Class<?> listener : listeners) {
             listenerRegistry.addPluginListener(pluginId, listener);
         }
