@@ -18,7 +18,7 @@ jar{
 }
 
 dependencies {
-    compileOnly project(':halo')
+    compileOnly project(':core')
     implementation 'org.pf4j:pf4j:3.6.0'
     implementation 'com.alibaba:fastjson:1.2.75'
     compileOnly 'org.springframework.boot:spring-boot-starter-web'

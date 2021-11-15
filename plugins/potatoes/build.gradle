@@ -23,7 +23,7 @@ repositories {
     jcenter()
 }
 dependencies {
-    compileOnly project(':halo')
+    compileOnly project(':core')
 
     compileOnly 'org.springframework.boot:spring-boot-starter-web'
     compileOnly "org.springframework.boot:spring-boot-starter-data-jpa"

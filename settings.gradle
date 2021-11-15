@@ -1,5 +1,5 @@
 rootProject.name = 'halo-plugin-experimental'
-include 'halo'
+include 'core'
 include 'plugins'
 include 'plugins:apples'
 findProject(':plugins:apples')?.name = 'apples'

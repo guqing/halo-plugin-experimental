@@ -18,7 +18,7 @@ ext {
     commonsLangVersion = "3.10"
 }
 dependencies {
-    compileOnly project(':halo')
+    compileOnly project(':core')
 
     implementation "org.springframework.boot:spring-boot-starter-web"
     implementation "org.springframework.boot:spring-boot-starter-data-jpa"
