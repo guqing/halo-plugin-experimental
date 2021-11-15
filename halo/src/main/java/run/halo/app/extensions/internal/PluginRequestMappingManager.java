@@ -10,6 +10,8 @@ import org.springframework.context.ApplicationContext;
 import org.springframework.util.ReflectionUtils;
 import org.springframework.web.servlet.mvc.method.annotation.RequestMappingHandlerMapping;
 import run.halo.app.extensions.SpringPluginManager;
+import run.halo.app.extensions.registry.ExtensionClassRegistry;
+import run.halo.app.extensions.registry.ExtensionClassRegistry.ClassDescriptor;
 
 /**
  * Plugin mapping manager
@@ -73,8 +75,8 @@ public class PluginRequestMappingManager {
 
     public Set<Object> getControllerBeans(SpringPluginManager pluginManager, String pluginId) {
         ApplicationContext applicationContext = pluginManager.getApplicationContext();
-        return pluginManager
-            .getControllers(pluginId)
+        return ExtensionClassRegistry.getInstance()
+            .findClasses(pluginId, ClassDescriptor::isController)
             .stream()
             .filter(clazz -> applicationContext.containsBeanDefinition(clazz.getName()))
             .map(applicationContext::getBean)

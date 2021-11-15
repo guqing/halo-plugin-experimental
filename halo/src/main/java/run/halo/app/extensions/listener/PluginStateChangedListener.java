@@ -1,5 +1,6 @@
 package run.halo.app.extensions.listener;
 
+import java.util.List;
 import lombok.extern.slf4j.Slf4j;
 import org.pf4j.PluginManager;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -12,7 +13,9 @@ import run.halo.app.extensions.config.PluginProperties;
 import run.halo.app.extensions.event.HaloPluginStartedEvent;
 import run.halo.app.extensions.event.HaloPluginStoppedEvent;
 import run.halo.app.extensions.extpoint.ExtensionPointFinder;
-import run.halo.app.handler.file.FileHandler;
+import run.halo.app.extensions.registry.ExtensionClassRegistry;
+import run.halo.app.extensions.registry.ExtensionClassRegistry.ClassDescriptor;
+import run.halo.app.extensions.registry.PluginListenerRegistry;
 
 /**
  * Halo plugin state changed listener for Spring Boot.
@@ -30,18 +33,24 @@ public class PluginStateChangedListener {
     private ExtensionPointFinder extensionPointFinder;
 
     @Autowired
-    private SpringPluginManager springPluginManager;
+    private PluginListenerRegistry listenerRegistry;
 
     @EventListener(HaloPluginStartedEvent.class)
     public void onPluginStarted(HaloPluginStartedEvent event) {
-        springPluginManager.registerListenerBy(event.getPlugin().getPluginId());
+        String pluginId = event.getPlugin().getPluginId();
+        List<Class<?>> listenerClasses =
+            ExtensionClassRegistry.getInstance().findClasses(pluginId, ClassDescriptor::isListener);
+        for (Class<?> listenerClass : listenerClasses) {
+            listenerRegistry.addPluginListener(event.getPlugin().getPluginId(), listenerClass);
+        }
+
         this.extensionPointFinder.refreshExtensions();
         log.info("The plugin starts successfully.");
     }
 
     @EventListener(HaloPluginStoppedEvent.class)
     public void onPluginStopped(HaloPluginStoppedEvent event) {
-        springPluginManager.unregisterListenerBy(event.getPlugin().getPluginId());
+        listenerRegistry.removePluginListener(event.getPlugin().getPluginId());
         this.extensionPointFinder.refreshExtensions();
         log.info("Plugin {} is stopped", event.getPlugin().getPluginId());
     }

@@ -1,11 +1,9 @@
 package run.halo.app.extensions.internal;
 
-import static org.springframework.beans.factory.config.BeanDefinition.ROLE_APPLICATION;
 import static org.springframework.beans.factory.config.BeanDefinition.SCOPE_SINGLETON;
 
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
-import java.util.Arrays;
 import java.util.Comparator;
 import java.util.Objects;
 import java.util.Optional;
@@ -19,9 +17,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.config.AutowireCapableBeanFactory;
-import org.springframework.beans.factory.config.BeanDefinition;
 import org.springframework.beans.factory.support.BeanDefinitionBuilder;
 import org.springframework.beans.factory.support.DefaultListableBeanFactory;
+import org.springframework.beans.factory.support.GenericBeanDefinition;
 import org.springframework.context.ApplicationContext;
 import org.springframework.lang.Nullable;
 import run.halo.app.extensions.SpringPlugin;
@@ -141,8 +139,11 @@ public class SpringExtensionFactory implements ExtensionFactory {
             (DefaultListableBeanFactory) applicationContext.getAutowireCapableBeanFactory();
         BeanDefinitionBuilder beanDefinitionBuilder =
             BeanDefinitionBuilder.genericBeanDefinition(extensionClass);
-        BeanDefinition beanDefinition = beanDefinitionBuilder.getRawBeanDefinition();
+        GenericBeanDefinition beanDefinition =
+            (GenericBeanDefinition) beanDefinitionBuilder.getRawBeanDefinition();
         beanDefinition.setScope(SCOPE_SINGLETON);
+        beanDefinition.setLazyInit(true);
+        beanDefinition.setAutowireMode(GenericBeanDefinition.AUTOWIRE_BY_TYPE);
         beanFactory.registerBeanDefinition(extensionClass.getName(), beanDefinition);
     }
 

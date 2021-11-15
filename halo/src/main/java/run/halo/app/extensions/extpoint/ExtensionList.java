@@ -8,6 +8,7 @@ import java.util.List;
 import java.util.stream.Collectors;
 import org.springframework.lang.NonNull;
 import run.halo.app.extensions.SpringPluginManager;
+import run.halo.app.extensions.registry.ExtensionClassRegistry;
 
 /**
  * @author guqing
@@ -85,7 +86,7 @@ public class ExtensionList<T> extends AbstractList<T> {
         }
         pluginManager.acquireLock();
         try {
-            List<ExtensionComponent<T>> collect = pluginManager.getExtensionsInjector()
+            List<ExtensionComponent<T>> collect = ExtensionClassRegistry.getInstance()
                 .getAllExtPoints()
                 .stream()
                 .filter(extensionType::isAssignableFrom)

@@ -16,7 +16,12 @@ bootJar{
 jar{
     enabled = true
 }
-
+repositories {
+    mavenLocal()
+    mavenCentral()
+    maven { url 'https://repo.spring.io/milestone' }
+    jcenter()
+}
 dependencies {
     compileOnly project(':halo')
 

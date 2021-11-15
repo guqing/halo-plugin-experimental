@@ -4,6 +4,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.event.EventListener;
 import org.springframework.stereotype.Component;
 import run.halo.app.event.post.PostVisitEvent;
+import run.halo.app.event.post.SheetVisitEvent;
 import run.halo.app.extensions.event.HaloPluginStateChangedEvent;
 
 /**
@@ -18,5 +19,11 @@ public class HaloPostVisitListener {
     public void onPluginStarted(PostVisitEvent event) {
         System.out.println("\uD83D\uDC47\uD83D\uDC47\uD83D\uDC47\uD83D\uDC47\uD83D\uDC47\uD83D\uDC47\uD83D\uDC47");
         log.info("Plugin state [{}] is changed", event);
+    }
+
+    @EventListener(SheetVisitEvent.class)
+    public void onSheetVisit(SheetVisitEvent event) {
+        System.out.println("\uD83D\uDC47\uD83D\uDC47\uD83D\uDC47\uD83D\uDC47\uD83D\uDC47\uD83D\uDC47\uD83D\uDC47");
+        log.info("sheet visit count [{}] is changed", event);
     }
 }

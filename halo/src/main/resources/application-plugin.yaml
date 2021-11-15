@@ -56,7 +56,9 @@ management:
 logging:
   level:
     run.halo.app: DEBUG
-    org.hibernate: INFO
+#    org.springframework.orm.jpa: DEBUG
+#    org.hibernate: DEBUG
+#    org.springframework.data.repository: DEBUG
     org.hibernate.type.descriptor.sql.BasicBinder: INFO
     org.hibernate.type.descriptor.sql.BasicExtractor: INFO
   file:

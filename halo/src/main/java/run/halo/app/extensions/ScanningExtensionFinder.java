@@ -12,10 +12,10 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import javax.annotation.Resource;
+import javax.persistence.Entity;
 import lombok.extern.slf4j.Slf4j;
 import org.pf4j.AbstractExtensionFinder;
 import org.pf4j.Extension;
-import org.pf4j.PluginManager;
 import org.pf4j.PluginWrapper;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.stereotype.Component;
@@ -36,7 +36,7 @@ import run.halo.app.extensions.ac.CouplingAnalyser;
 @Slf4j
 public class ScanningExtensionFinder extends AbstractExtensionFinder {
 
-    public ScanningExtensionFinder(PluginManager pluginManager) {
+    public ScanningExtensionFinder(SpringPluginManager pluginManager) {
         super(pluginManager);
     }
 
@@ -102,7 +102,8 @@ public class ScanningExtensionFinder extends AbstractExtensionFinder {
             Controller.class.getName(),
             RestController.class.getName(),
             Component.class.getName(),
-            Configuration.class.getName());
+            Configuration.class.getName(),
+            Entity.class.getName());
 
         for (String extensionAnnotationName : extensionAnnotationNames) {
             ClassInfoList classesWithAnnotation =

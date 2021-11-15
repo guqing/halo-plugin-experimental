@@ -7,7 +7,6 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.concurrent.locks.ReentrantLock;
 import lombok.extern.slf4j.Slf4j;
 import org.pf4j.DefaultPluginManager;
@@ -31,7 +30,6 @@ import run.halo.app.extensions.config.model.PluginStartingError;
 import run.halo.app.extensions.event.HaloPluginStartedEvent;
 import run.halo.app.extensions.event.HaloPluginStateChangedEvent;
 import run.halo.app.extensions.event.HaloPluginStoppedEvent;
-import run.halo.app.extensions.internal.PluginListenerRegistry;
 import run.halo.app.extensions.internal.PluginRequestMappingManager;
 
 /**
@@ -50,7 +48,6 @@ public class SpringPluginManager extends DefaultPluginManager
     private boolean autoStartPlugin = true;
     private PluginRepository pluginRepository;
     private ExtensionsInjector extensionsInjector;
-    private PluginListenerRegistry listenerRegistry;
     private PluginRequestMappingManager requestMappingManager;
 
     public SpringPluginManager() {
@@ -116,14 +113,6 @@ public class SpringPluginManager extends DefaultPluginManager
         this.applicationContext = applicationContext;
     }
 
-    public PluginListenerRegistry getListenerRegistry() {
-        return listenerRegistry;
-    }
-
-    public void setListenerRegistry(PluginListenerRegistry listenerRegistry) {
-        this.listenerRegistry = listenerRegistry;
-    }
-
     @Override
     public void afterPropertiesSet() {
         // This method load, start plugins and inject extensions in Spring
@@ -132,9 +121,6 @@ public class SpringPluginManager extends DefaultPluginManager
         this.extensionsInjector.injectExtensions();
 
         this.requestMappingManager = applicationContext.getBean(PluginRequestMappingManager.class);
-
-        // create listener registry
-        this.listenerRegistry = new PluginListenerRegistry(applicationContext);
     }
 
     public PluginStartingError getPluginStartingError(String pluginId) {
@@ -191,22 +177,6 @@ public class SpringPluginManager extends DefaultPluginManager
         }
 
         return extensions;
-    }
-
-
-    public Set<Class<?>> getControllers(String pluginId) {
-        return this.extensionsInjector.getControllers(pluginId);
-    }
-
-    public void registerListenerBy(String pluginId) {
-        List<Class<?>> listeners = this.extensionsInjector.getListenerClasses(pluginId);
-        for (Class<?> listener : listeners) {
-            listenerRegistry.addPluginListener(pluginId, listener);
-        }
-    }
-
-    public void unregisterListenerBy(String pluginId) {
-        this.listenerRegistry.removePluginListener(pluginId);
     }
 
     // region Plugin State Manipulation
@@ -387,7 +357,7 @@ public class SpringPluginManager extends DefaultPluginManager
         log.info("Start plugin '{}'", getPluginLabel(pluginDescriptor));
 
         try {
-            // inject bean
+            // load and inject bean
             extensionsInjector.injectExtensionByPluginId(pluginId);
 
             pluginWrapper.getPlugin().start();
