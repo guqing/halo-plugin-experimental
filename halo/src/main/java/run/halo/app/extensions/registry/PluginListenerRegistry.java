@@ -1,4 +1,4 @@
-package run.halo.app.extensions.internal;
+package run.halo.app.extensions.registry;
 
 import java.lang.reflect.Method;
 import java.util.Collections;
@@ -11,6 +11,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.aop.support.AopUtils;
 import org.springframework.beans.BeansException;
 import org.springframework.context.ApplicationContext;
+import org.springframework.context.ApplicationContextAware;
 import org.springframework.context.ApplicationListener;
 import org.springframework.context.event.DefaultEventListenerFactory;
 import org.springframework.context.event.EventListener;
@@ -18,6 +19,8 @@ import org.springframework.context.event.EventListenerFactory;
 import org.springframework.context.support.AbstractApplicationContext;
 import org.springframework.core.MethodIntrospector;
 import org.springframework.core.annotation.AnnotatedElementUtils;
+import org.springframework.lang.NonNull;
+import org.springframework.stereotype.Component;
 import org.springframework.util.Assert;
 import org.springframework.util.CollectionUtils;
 import run.halo.app.extensions.event.PluginApplicationListenerMethodAdapter;
@@ -30,17 +33,13 @@ import run.halo.app.extensions.event.PluginEventExpressionEvaluator;
  * @since 2021-11-05
  */
 @Slf4j
-public class PluginListenerRegistry {
+@Component
+public class PluginListenerRegistry implements ApplicationContextAware {
 
     private final Map<String, List<ApplicationListener<?>>> listenerRegistrations =
         new ConcurrentHashMap<>();
     private final PluginEventExpressionEvaluator evaluator = new PluginEventExpressionEvaluator();
-    private final AbstractApplicationContext applicationContext;
-
-
-    public PluginListenerRegistry(ApplicationContext context) {
-        this.applicationContext = (AbstractApplicationContext) context;
-    }
+    private AbstractApplicationContext applicationContext;
 
     /**
      * Add a new ApplicationListener that will be notified on context events such as context refresh
@@ -143,5 +142,11 @@ public class PluginListenerRegistry {
             log.debug("Could not find any beans of [EventListenerFactory]");
         }
         return Collections.emptyList();
+    }
+
+    @Override
+    public void setApplicationContext(@NonNull ApplicationContext applicationContext)
+        throws BeansException {
+        this.applicationContext = (AbstractApplicationContext) applicationContext;
     }
 }
