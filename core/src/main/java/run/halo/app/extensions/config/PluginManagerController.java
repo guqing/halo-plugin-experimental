@@ -1,19 +1,30 @@
 package run.halo.app.extensions.config;
 
+import java.io.IOException;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.stream.Collectors;
+
+import com.google.common.collect.Maps;
+import freemarker.template.TemplateException;
+import org.apache.commons.io.output.StringBuilderWriter;
+import org.apache.commons.lang3.StringUtils;
+import org.bouncycastle.math.raw.Mod;
 import org.pf4j.PluginDescriptor;
 import org.pf4j.PluginRuntimeException;
 import org.pf4j.PluginState;
 import org.pf4j.PluginWrapper;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.stereotype.Controller;
+import org.springframework.web.bind.annotation.*;
+import org.springframework.web.servlet.ModelAndView;
+import org.springframework.web.servlet.view.freemarker.FreeMarkerConfig;
+import org.springframework.web.servlet.view.freemarker.FreeMarkerConfigurer;
+import run.halo.app.exception.NotFoundException;
 import run.halo.app.extensions.SpringPluginManager;
 import run.halo.app.extensions.config.model.PluginInfo;
+
+import javax.servlet.http.HttpServletRequest;
 
 /**
  * Plugin manager controller.
@@ -26,6 +37,8 @@ public class PluginManagerController {
 
     @Autowired
     private SpringPluginManager pluginManager;
+    @Autowired
+    private FreeMarkerConfig freeMarkerConfig;
 
     @GetMapping(value = "${halo.plugin.controller.base-path:/plugins}/list")
     public List<PluginInfo> list() {
@@ -87,6 +100,31 @@ public class PluginManagerController {
     public int reloadAll() {
         pluginManager.reloadPlugins(false);
         return 0;
+    }
+
+    @GetMapping(value = "${halo.plugin.controller.base-path:/plugins}/web/{pluginId}/**")
+    public String web(@PathVariable String pluginId, HttpServletRequest req){
+        var url = req.getRequestURI();
+        var str = StringUtils.substringAfter(url, pluginId + "/");
+        String template = "";
+        if (str.length() <= 1) {
+            template = pluginId + "/index.ftl";
+        } else {
+            template = pluginId + "/" + str;
+            if (!str.contains(".")) {
+                template += ".ftl";
+            }
+        }
+        if (StringUtils.isEmpty(template)) {
+            throw new NotFoundException("NOT FOUND");
+        }
+        try {
+            StringBuilderWriter writer = new StringBuilderWriter();
+            freeMarkerConfig.getConfiguration().getTemplate(template).process(Maps.newHashMap(), writer);
+            return writer.toString();
+        } catch (IOException | TemplateException e) {
+            throw new NotFoundException("NOT FOUND");
+        }
     }
 
 }

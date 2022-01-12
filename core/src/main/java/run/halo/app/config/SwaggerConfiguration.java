@@ -84,6 +84,15 @@ public class SwaggerConfiguration {
     }
 
     @Bean
+    public Docket haloPluginApi() {
+        return buildApiDocket("run.halo.app.plugin.api",
+                "run.halo.app.extensions.config",
+                "/plugins/**")
+                .securitySchemes(adminApiKeys())
+                .securityContexts(adminSecurityContext());
+    }
+
+    @Bean
     SecurityConfiguration security() {
         return SecurityConfigurationBuilder.builder()
             .clientId("halo-app-client-id")

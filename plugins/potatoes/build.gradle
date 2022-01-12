@@ -31,6 +31,19 @@ dependencies {
     testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine:5.7.0'
 }
 
+defaultTasks 'zipStatic'
+
+task zipStatic(type: Zip) {
+    from 'src/main/resources/static/'
+    include '*'
+    include '*/*'
+    archiveName 'webpkg.zip'
+    destinationDir(file('build/resources/main'))
+}
+
+processResources.finalizedBy(zipStatic)
+
+
 test {
     useJUnitPlatform()
 }

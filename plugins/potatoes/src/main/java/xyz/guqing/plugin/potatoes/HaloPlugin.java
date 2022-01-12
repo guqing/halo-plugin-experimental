@@ -1,11 +1,7 @@
 package xyz.guqing.plugin.potatoes;
 
-import java.util.stream.Collectors;
 import org.pf4j.Extension;
-import org.springframework.beans.factory.annotation.Autowired;
 import run.halo.app.extensions.extpoint.IHaloPlugin;
-import run.halo.app.model.entity.Post;
-import run.halo.app.service.PostService;
 
 /**
  * @author guqing
