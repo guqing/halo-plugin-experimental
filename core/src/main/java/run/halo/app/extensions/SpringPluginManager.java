@@ -30,6 +30,7 @@ import run.halo.app.extensions.config.model.PluginStartingError;
 import run.halo.app.extensions.event.HaloPluginStartedEvent;
 import run.halo.app.extensions.event.HaloPluginStateChangedEvent;
 import run.halo.app.extensions.event.HaloPluginStoppedEvent;
+import run.halo.app.extensions.event.HaloPluginWebStartedEvent;
 import run.halo.app.extensions.internal.PluginRequestMappingManager;
 
 /**
@@ -367,6 +368,7 @@ public class SpringPluginManager extends DefaultPluginManager
             startedPlugins.add(pluginWrapper);
 
             applicationContext.publishEvent(new HaloPluginStartedEvent(this, pluginWrapper));
+            applicationContext.publishEvent(new HaloPluginWebStartedEvent(this, pluginWrapper));
         } catch (Exception e) {
             log.error("Unable to start plugin '{}'",
                 getPluginLabel(pluginWrapper.getDescriptor()), e);

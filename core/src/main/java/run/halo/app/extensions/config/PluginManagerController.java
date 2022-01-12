@@ -104,7 +104,7 @@ public class PluginManagerController {
     @GetMapping(value = "${halo.plugin.controller.base-path:/plugins}/web/{pluginId}/**")
     public String web(@PathVariable String pluginId, HttpServletRequest req) {
         PluginWrapper plugin = pluginManager.getPlugin(pluginId);
-        if (plugin == null || PluginState.STARTED.equals(plugin.getPluginState())) {
+        if (plugin == null || !PluginState.STARTED.equals(plugin.getPluginState())) {
             throw new ServiceException(pluginId + " 插件未启动");
         }
         var url = req.getRequestURI();

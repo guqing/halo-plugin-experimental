@@ -70,6 +70,7 @@ dependencies {
     implementation "org.springframework.boot:spring-boot-starter-freemarker"
     implementation 'org.springframework.boot:spring-boot-starter-validation'
 
+    implementation 'net.lingala.zip4j:zip4j:2.9.1'
     implementation "com.sun.mail:jakarta.mail"
     implementation "com.google.guava:guava:$guavaVersion"
     implementation "com.upyun:java-sdk:$upyunSdkVersion"
