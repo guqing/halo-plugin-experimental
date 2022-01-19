@@ -27,10 +27,7 @@ import org.springframework.context.ApplicationContext;
 import org.springframework.context.ApplicationContextAware;
 import org.springframework.lang.NonNull;
 import run.halo.app.extensions.config.model.PluginStartingError;
-import run.halo.app.extensions.event.HaloPluginStartedEvent;
-import run.halo.app.extensions.event.HaloPluginStateChangedEvent;
-import run.halo.app.extensions.event.HaloPluginStoppedEvent;
-import run.halo.app.extensions.event.HaloPluginWebStartedEvent;
+import run.halo.app.extensions.event.*;
 import run.halo.app.extensions.internal.PluginRequestMappingManager;
 
 /**
@@ -207,6 +204,7 @@ public class SpringPluginManager extends DefaultPluginManager
 
                     applicationContext.publishEvent(
                         new HaloPluginStoppedEvent(this, pluginWrapper));
+                    applicationContext.publishEvent(new HaloPluginWebStoppedEvent(this, pluginWrapper));
                     firePluginStateEvent(new PluginStateEvent(this, pluginWrapper, pluginState));
                 } catch (PluginRuntimeException e) {
                     log.error(e.getMessage(), e);
@@ -259,6 +257,7 @@ public class SpringPluginManager extends DefaultPluginManager
             startedPlugins.remove(pluginWrapper);
 
             applicationContext.publishEvent(new HaloPluginStoppedEvent(this, pluginWrapper));
+            applicationContext.publishEvent(new HaloPluginWebStoppedEvent(this, pluginWrapper));
             firePluginStateEvent(new PluginStateEvent(this, pluginWrapper, pluginState));
         } catch (Exception e) {
             log.error(e.getMessage(), e);
