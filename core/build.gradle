@@ -9,9 +9,11 @@ description = "Halo, An excellent open source blog publishing application."
 sourceCompatibility = JavaVersion.VERSION_11
 
 repositories {
+    maven { url 'https://maven.aliyun.com/repository/public/' }
+    maven { url 'https://maven.aliyun.com/repository/spring/' }
+    maven { url 'https://repo.spring.io/milestone' }
     mavenLocal()
     mavenCentral()
-    maven { url 'https://repo.spring.io/milestone' }
     jcenter()
 }
 

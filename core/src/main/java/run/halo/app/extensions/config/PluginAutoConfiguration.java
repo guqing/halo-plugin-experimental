@@ -4,6 +4,7 @@ import java.io.File;
 import java.lang.reflect.Constructor;
 import java.nio.file.Path;
 import lombok.extern.slf4j.Slf4j;
+import org.pf4j.ClassLoadingStrategy;
 import org.pf4j.CompoundPluginLoader;
 import org.pf4j.DevelopmentPluginLoader;
 import org.pf4j.JarPluginLoader;
@@ -125,7 +126,7 @@ public class PluginAutoConfiguration {
                                     PluginDescriptor pluginDescriptor) {
                                     PluginClassLoader pluginClassLoader =
                                         new PluginClassLoader(pluginManager, pluginDescriptor,
-                                            getClass().getClassLoader());
+                                            getClass().getClassLoader(), ClassLoadingStrategy.APD);
                                     pluginClassLoader.addFile(pluginPath.toFile());
                                     return pluginClassLoader;
 
