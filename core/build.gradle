@@ -37,7 +37,7 @@ bootJar {
 }
 
 ext {
-    guavaVersion= "31.0-jre"
+    guavaVersion= "31.1-jre"
     upyunSdkVersion = "4.2.0"
     qiniuSdkVersion = "7.2.29"
     aliyunSdkVersion = "3.11.3"
