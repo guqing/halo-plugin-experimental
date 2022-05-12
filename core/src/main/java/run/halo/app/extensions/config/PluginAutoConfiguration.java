@@ -1,8 +1,15 @@
 package run.halo.app.extensions.config;
 
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
 import java.io.File;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.lang.reflect.Constructor;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
+import java.util.Arrays;
 import lombok.extern.slf4j.Slf4j;
 import org.pf4j.ClassLoadingStrategy;
 import org.pf4j.CompoundPluginLoader;
@@ -15,6 +22,8 @@ import org.pf4j.PluginManager;
 import org.pf4j.PluginStateListener;
 import org.pf4j.PluginStatusProvider;
 import org.pf4j.RuntimeMode;
+import org.pf4j.update.DefaultUpdateRepository;
+import org.pf4j.update.UpdateManager;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
@@ -22,6 +31,7 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.core.io.ClassPathResource;
 import org.springframework.util.StringUtils;
 import org.springframework.web.servlet.mvc.method.annotation.RequestMappingHandlerMapping;
 import run.halo.app.extensions.SpringPluginManager;
@@ -149,5 +159,14 @@ public class PluginAutoConfiguration {
         pluginManager.setSystemVersion(pluginProperties.getSystemVersion());
 
         return pluginManager;
+    }
+
+    @Bean
+    UpdateManager updateManager() throws IOException {
+        Gson gson = new GsonBuilder().create();
+        InputStream stream = new ClassPathResource("repositories.json").getInputStream();
+        DefaultUpdateRepository[] repositories = gson.fromJson(
+            new InputStreamReader(stream, StandardCharsets.UTF_8), DefaultUpdateRepository[].class);
+        return new UpdateManager(pluginManager(), Arrays.asList(repositories));
     }
 }

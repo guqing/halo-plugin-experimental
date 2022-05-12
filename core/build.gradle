@@ -112,6 +112,8 @@ dependencies {
 
     implementation "org.ow2.asm:asm:$asmVerson"
 
+    implementation "org.pf4j:pf4j-update:2.3.0"
+
     implementation "org.iq80.leveldb:leveldb:$levelDbVersion"
     runtimeOnly "com.h2database:h2:$h2Version"
     runtimeOnly "mysql:mysql-connector-java"
