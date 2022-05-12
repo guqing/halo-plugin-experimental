@@ -7,6 +7,7 @@ import org.pf4j.PluginWrapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.BeansException;
+import org.springframework.beans.factory.support.DefaultListableBeanFactory;
 import org.springframework.context.ApplicationContext;
 import org.springframework.util.Assert;
 import run.halo.app.extensions.registry.ExtensionClassRegistry;
@@ -37,10 +38,7 @@ public class ExtensionsInjector {
         for (ClassDescriptor descriptor : classRegistry.unregister(pluginId)) {
             try {
                 Object existingBean = applicationContext.getBean(descriptor.getName());
-                applicationContext.getAutowireCapableBeanFactory()
-                    .destroyBean(existingBean);
-                log.debug("Destroyed plugin bean [{}] from application",
-                    existingBean.getClass().getName());
+                unregisterExtension(pluginId, existingBean);
             } catch (BeansException e) {
                 log.warn(e.getMessage());
             }
@@ -50,10 +48,10 @@ public class ExtensionsInjector {
     public void unregisterExtension(String pluginId, Object existingBean) {
         Assert.notNull(pluginId, "pluginId must not be null");
         Assert.notNull(existingBean, "existingBean must not be null");
-        springPluginManager.getApplicationContext()
-            .getAutowireCapableBeanFactory()
-            .destroyBean(existingBean);
-        classRegistry.unregister(pluginId, existingBean.getClass());
+        DefaultListableBeanFactory beanFactory =
+            (DefaultListableBeanFactory) springPluginManager.getApplicationContext()
+                .getAutowireCapableBeanFactory();
+        beanFactory.removeBeanDefinition(existingBean.getClass().getName());
         log.debug("Destroyed plugin bean [{}] from application",
             existingBean.getClass().getName());
     }

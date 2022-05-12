@@ -55,7 +55,7 @@ public class PluginRequestMappingManager {
         }
     }
 
-    public void unregisterControllerMapping(Object controller) {
+    private void unregisterControllerMappingInternal(Object controller) {
         requestMappingHandlerMapping.getHandlerMethods()
             .forEach((mapping, handlerMethod) -> {
                 if (controller == handlerMethod.getBean()) {
@@ -66,11 +66,9 @@ public class PluginRequestMappingManager {
             });
     }
 
-    public void unregisterControllers(SpringPluginManager pluginManager, String pluginId) {
-        getControllerBeans(pluginManager, pluginId).forEach(controller -> {
-            unregisterControllerMapping(controller);
-            pluginManager.getExtensionsInjector().unregisterExtension(pluginId, controller);
-        });
+    public void removeControllerMapping(SpringPluginManager pluginManager, String pluginId) {
+        getControllerBeans(pluginManager, pluginId)
+            .forEach(this::unregisterControllerMappingInternal);
     }
 
     public Set<Object> getControllerBeans(SpringPluginManager pluginManager, String pluginId) {

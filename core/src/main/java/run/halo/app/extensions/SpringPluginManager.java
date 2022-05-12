@@ -31,6 +31,7 @@ import run.halo.app.extensions.event.HaloPluginStartedEvent;
 import run.halo.app.extensions.event.HaloPluginStateChangedEvent;
 import run.halo.app.extensions.event.HaloPluginStoppedEvent;
 import run.halo.app.extensions.internal.PluginRequestMappingManager;
+import run.halo.app.extensions.internal.SpringExtensionFactory;
 
 /**
  * PluginManager to hold the main ApplicationContext
@@ -68,7 +69,8 @@ public class SpringPluginManager extends DefaultPluginManager
 
     @Override
     protected ExtensionFactory createExtensionFactory() {
-        return new SingletonSpringExtensionFactory(this);
+        //return new SingletonSpringExtensionFactory(this);
+        return new SpringExtensionFactory(this);
     }
 
     @Override
@@ -421,8 +423,7 @@ public class SpringPluginManager extends DefaultPluginManager
     public void releaseAdditionalResources(String pluginId) {
         // release request mapping
         requestMappingManager
-            .unregisterControllers(this, pluginId);
-
+            .removeControllerMapping(this, pluginId);
         // release extension bean
         releaseRegisteredResources(pluginId);
     }
