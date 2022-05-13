@@ -55,7 +55,7 @@ management:
         include: [ 'httptrace', 'metrics','env','logfile','health' ]
 logging:
   level:
-    run.halo.app: ERROR
+    run.halo.app.extensions: DEBUG
 #    org.springframework.orm.jpa: DEBUG
 #    org.hibernate: DEBUG
 #    org.springframework.data.repository: DEBUG
@@ -74,14 +74,14 @@ halo:
   workDir: ${user.home}/halo-plugin/
   cache: memory
   plugin:
-    runtime-mode: development # development, deployment
+    runtime-mode: deployment # development, deployment
     enabled: true
     classes-directories:
       - "build/classes"
       - "build/resources"
     lib-directories:
       - "libs"
-    #plugins-root: ${user.home}/halo-plugin/plugins
+    plugins-root: ${user.home}/halo-plugin/plugins
     controller:
       base-path: plugins
     #    custom-plugin-loaders:
