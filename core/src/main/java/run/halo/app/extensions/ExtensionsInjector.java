@@ -111,11 +111,6 @@ public class ExtensionsInjector {
                 Class<?> extensionClass =
                     plugin.getPluginClassLoader().loadClass(extensionClassName);
                 log.debug("Register a extension class '{}' as a bean", extensionClassName);
-//                classRegistry.register(pluginId, extensionClass);
-                //registerExtensionAsBean(extensionClass);
-//                final DefaultListableBeanFactory beanFactory =
-//                    (DefaultListableBeanFactory) getApplicationContext().getAutowireCapableBeanFactory();
-//                beanFactory.registerSingleton(extensionClassName, o);
                 pluginContext.registerBean(extensionClass);
             } catch (ClassNotFoundException e) {
                 log.error(e.getMessage(), e);
@@ -123,10 +118,6 @@ public class ExtensionsInjector {
         }
         contextRegistry.register(pluginId, pluginContext);
         getApplicationContext().publishEvent(new ExtensionInjectedEvent(this, plugin));
-        for (TestExtPoint testExtPoint : getApplicationContext().getBean(ExtensionPointFinder.class)
-            .lookup(TestExtPoint.class)) {
-            System.out.println("name: " + testExtPoint.getName());
-        }
     }
 
     /**
