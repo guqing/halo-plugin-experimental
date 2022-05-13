@@ -1,21 +1,17 @@
 package run.halo.app.extensions;
 
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import lombok.extern.slf4j.Slf4j;
 import org.pf4j.PluginWrapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.BeansException;
 import org.springframework.beans.factory.annotation.AutowiredAnnotationBeanPostProcessor;
-import org.springframework.beans.factory.config.ConfigurableListableBeanFactory;
 import org.springframework.beans.factory.support.DefaultListableBeanFactory;
 import org.springframework.context.ApplicationContext;
-import org.springframework.context.support.GenericApplicationContext;
 import org.springframework.util.Assert;
-import run.halo.app.extensions.extpoint.ExtensionPointFinder;
-import run.halo.app.extensions.registry.ExtensionClassRegistry;
-import run.halo.app.extensions.registry.ExtensionClassRegistry.ClassDescriptor;
 import run.halo.app.extensions.internal.ExtensionInjectedEvent;
 import run.halo.app.extensions.registry.ExtensionContextRegistry;
 
@@ -23,35 +19,59 @@ import run.halo.app.extensions.registry.ExtensionContextRegistry;
  * @author guqing
  * @since 2021-11-01
  */
-public class ExtensionsInjector {
-
-    private static final Logger log = LoggerFactory.getLogger(ExtensionsInjector.class);
+@Slf4j
+public class PluginApplicationInitializer {
     protected final SpringPluginManager springPluginManager;
     private final ExtensionContextRegistry contextRegistry = ExtensionContextRegistry.getInstance();
 
-    public ExtensionsInjector(SpringPluginManager springPluginManager) {
+    public PluginApplicationInitializer(SpringPluginManager springPluginManager) {
         this.springPluginManager = springPluginManager;
     }
 
-    public ApplicationContext getApplicationContext() {
+    public ApplicationContext getRootApplicationContext() {
         return this.springPluginManager.getApplicationContext();
     }
 
-    public void unregisterExtensions(String pluginId) {
-        Assert.notNull(pluginId, "pluginId must not be null");
-        contextRegistry.unregister(pluginId);
+    private PluginApplicationContext createPluginApplicationContext(String pluginId) {
+        PluginApplicationContext pluginApplicationContext = new PluginApplicationContext();
+        pluginApplicationContext.setParent(getRootApplicationContext());
+
+        DefaultListableBeanFactory beanFactory =
+            (DefaultListableBeanFactory) pluginApplicationContext.getBeanFactory();
+
+        AutowiredAnnotationBeanPostProcessor autowiredAnnotationBeanPostProcessor =
+            new AutowiredAnnotationBeanPostProcessor();
+        autowiredAnnotationBeanPostProcessor.setBeanFactory(beanFactory);
+
+        beanFactory.addBeanPostProcessor(autowiredAnnotationBeanPostProcessor);
+
+        contextRegistry.register(pluginId, pluginApplicationContext);
+        return pluginApplicationContext;
     }
 
-    public void unregisterExtension(String pluginId, Object existingBean) {
+    private void initApplicationContext(String pluginId) {
+        if (contextRegistry.containsContext(pluginId)) {
+            log.debug("Plugin application context for [{}] has bean initialized.", pluginId);
+            return;
+        }
+        PluginApplicationContext pluginApplicationContext =
+            createPluginApplicationContext(pluginId);
+        for (Class<?> component : findCandidateComponents(pluginId)) {
+            log.debug("Register a plugin component class [{}] to context", component);
+            pluginApplicationContext.registerBean(component);
+        }
+    }
+
+    public void onStartUp(String pluginId) {
+        initApplicationContext(pluginId);
+    }
+
+    public void contextDestroyed(String pluginId) {
         Assert.notNull(pluginId, "pluginId must not be null");
-        Assert.notNull(existingBean, "existingBean must not be null");
-        DefaultListableBeanFactory beanFactory =
-            (DefaultListableBeanFactory) springPluginManager.getApplicationContext()
-                .getAutowireCapableBeanFactory();
-        beanFactory.destroySingleton(existingBean.getClass().getName());
-//        beanFactory.removeBeanDefinition(existingBean.getClass().getName());
-        log.debug("Destroyed plugin bean [{}] from application",
-            existingBean.getClass().getName());
+        PluginApplicationContext removed = contextRegistry.remove(pluginId);
+        if (removed != null) {
+            removed.close();
+        }
     }
 
     public void injectExtensions() {
@@ -86,38 +106,23 @@ public class ExtensionsInjector {
         }
     }
 
-    public void injectExtensionByPluginId(String pluginId) {
-        if (contextRegistry.containsContext(pluginId)) {
-            return;
-        }
-        GenericApplicationContext pluginContext = new GenericApplicationContext();
-        pluginContext.setParent(springPluginManager.getApplicationContext());
-
-        DefaultListableBeanFactory beanFactory = (DefaultListableBeanFactory)pluginContext.getBeanFactory();
-
-        AutowiredAnnotationBeanPostProcessor autowiredAnnotationBeanPostProcessor =
-            new AutowiredAnnotationBeanPostProcessor();
-        autowiredAnnotationBeanPostProcessor.setBeanFactory(beanFactory);
-
-        beanFactory.addBeanPostProcessor(autowiredAnnotationBeanPostProcessor);
-
+    private Set<Class<?>> findCandidateComponents(String pluginId) {
         Set<String> extensionClassNames = springPluginManager.getExtensionClassNames(pluginId);
         // add extensions for each started plugin
         PluginWrapper plugin = springPluginManager.getPlugin(pluginId);
         log.debug("Registering extensions of the plugin '{}' as beans", pluginId);
+        Set<Class<?>> candidateComponents = new HashSet<>();
         for (String extensionClassName : extensionClassNames) {
             log.debug("Load extension class '{}'", extensionClassName);
             try {
                 Class<?> extensionClass =
                     plugin.getPluginClassLoader().loadClass(extensionClassName);
-                log.debug("Register a extension class '{}' as a bean", extensionClassName);
-                pluginContext.registerBean(extensionClass);
+                candidateComponents.add(extensionClass);
             } catch (ClassNotFoundException e) {
                 log.error(e.getMessage(), e);
             }
         }
-        contextRegistry.register(pluginId, pluginContext);
-        getApplicationContext().publishEvent(new ExtensionInjectedEvent(this, plugin));
+        return candidateComponents;
     }
 
     /**

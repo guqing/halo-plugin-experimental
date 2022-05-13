@@ -48,7 +48,8 @@ public class SpringPluginManager extends DefaultPluginManager
     private ApplicationContext applicationContext;
     private boolean autoStartPlugin = true;
     private PluginRepository pluginRepository;
-    private ExtensionsInjector extensionsInjector;
+
+    private PluginApplicationInitializer pluginApplicationInitializer;
     private PluginRequestMappingManager requestMappingManager;
 
     public SpringPluginManager() {
@@ -89,10 +90,6 @@ public class SpringPluginManager extends DefaultPluginManager
         return this.pluginRepository;
     }
 
-    public ExtensionsInjector getExtensionsInjector() {
-        return extensionsInjector;
-    }
-
     public PluginRepository getPluginRepository() {
         return pluginRepository;
     }
@@ -119,8 +116,7 @@ public class SpringPluginManager extends DefaultPluginManager
     public void afterPropertiesSet() {
         // This method load, start plugins and inject extensions in Spring
         loadPlugins();
-        this.extensionsInjector = new ExtensionsInjector(this);
-        this.extensionsInjector.injectExtensions();
+        this.pluginApplicationInitializer = new PluginApplicationInitializer(this);
 
         this.requestMappingManager = applicationContext.getBean(PluginRequestMappingManager.class);
     }
@@ -179,15 +175,6 @@ public class SpringPluginManager extends DefaultPluginManager
         }
 
         return extensions;
-    }
-
-    // region Plugin State Manipulation
-    public void releaseRegisteredResources(String pluginId) {
-        try {
-            extensionsInjector.unregisterExtensions(pluginId);
-        } catch (Exception e) {
-            log.trace("Release registered resources failed. " + e.getMessage(), e);
-        }
     }
 
     private void doStopPlugins() {
@@ -280,7 +267,7 @@ public class SpringPluginManager extends DefaultPluginManager
                 try {
                     log.info("Start plugin '{}'", getPluginLabel(pluginWrapper.getDescriptor()));
                     // inject bean
-                    extensionsInjector.injectExtensionByPluginId(pluginWrapper.getPluginId());
+                    pluginApplicationInitializer.onStartUp(pluginWrapper.getPluginId());
 
                     pluginWrapper.getPlugin().start();
 
@@ -297,7 +284,7 @@ public class SpringPluginManager extends DefaultPluginManager
                     pluginWrapper.setFailedException(e);
                     startingErrors.put(pluginWrapper.getPluginId(), PluginStartingError.of(
                         pluginWrapper.getPluginId(), e.getMessage(), e.toString()));
-                    releaseRegisteredResources(pluginWrapper.getPluginId());
+                    releaseAdditionalResources(pluginWrapper.getPluginId());
                     log.error("Unable to start plugin '{}'",
                         getPluginLabel(pluginWrapper.getDescriptor()), e);
                 } finally {
@@ -360,8 +347,8 @@ public class SpringPluginManager extends DefaultPluginManager
 
         try {
             // load and inject bean
-            extensionsInjector.injectExtensionByPluginId(pluginId);
-
+            pluginApplicationInitializer.onStartUp(pluginId);
+            // create plugin instance and start it
             pluginWrapper.getPlugin().start();
 
             requestMappingManager.registerControllers(pluginWrapper);
@@ -375,7 +362,7 @@ public class SpringPluginManager extends DefaultPluginManager
             pluginWrapper.setPluginState(PluginState.FAILED);
             startingErrors.put(pluginWrapper.getPluginId(), PluginStartingError.of(
                 pluginWrapper.getPluginId(), e.getMessage(), e.toString()));
-            releaseRegisteredResources(pluginId);
+            releaseAdditionalResources(pluginId);
         } finally {
             firePluginStateEvent(new PluginStateEvent(this, pluginWrapper, pluginState));
         }
@@ -424,8 +411,11 @@ public class SpringPluginManager extends DefaultPluginManager
         // release request mapping
         requestMappingManager
             .removeControllerMapping(this, pluginId);
-        // release extension bean
-        releaseRegisteredResources(pluginId);
+        try {
+            pluginApplicationInitializer.contextDestroyed(pluginId);
+        } catch (Exception e) {
+            log.trace("Plugin application context close failed. ", e);
+        }
     }
 
     // end-region

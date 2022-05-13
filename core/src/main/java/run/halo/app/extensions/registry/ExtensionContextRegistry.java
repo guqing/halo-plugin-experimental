@@ -25,6 +25,7 @@ import org.springframework.stereotype.Component;
 import org.springframework.stereotype.Controller;
 import org.springframework.util.Assert;
 import org.springframework.util.CollectionUtils;
+import run.halo.app.extensions.PluginApplicationContext;
 
 /**
  * @author guqing
@@ -33,7 +34,7 @@ import org.springframework.util.CollectionUtils;
 public class ExtensionContextRegistry {
     private static final ExtensionContextRegistry INSTANCE = new ExtensionContextRegistry();
 
-    private final Map<String, GenericApplicationContext> registry = new HashMap<>();
+    private final Map<String, PluginApplicationContext> registry = new HashMap<>();
     private final ReentrantReadWriteLock readWriteLock = new ReentrantReadWriteLock();
 
     public static ExtensionContextRegistry getInstance() {
@@ -57,7 +58,7 @@ public class ExtensionContextRegistry {
         this.readWriteLock.readLock().unlock();
     }
 
-    public void register(String pluginId, GenericApplicationContext context) {
+    public void register(String pluginId, PluginApplicationContext context) {
         this.readWriteLock.writeLock().lock();
         try {
             if (!context.isActive()) {
@@ -69,20 +70,19 @@ public class ExtensionContextRegistry {
         }
     }
 
-    public void unregister(String pluginId) {
+    public PluginApplicationContext remove(String pluginId) {
         this.readWriteLock.writeLock().lock();
         try {
-            GenericApplicationContext context = registry.remove(pluginId);
-            context.close();
+            return registry.remove(pluginId);
         } finally {
             this.readWriteLock.writeLock().unlock();
         }
     }
 
-    public GenericApplicationContext getByPluginId(String pluginId) {
+    public PluginApplicationContext getByPluginId(String pluginId) {
         this.readWriteLock.readLock().lock();
         try {
-            GenericApplicationContext context = registry.get(pluginId);
+            PluginApplicationContext context = registry.get(pluginId);
             if(context == null) {
                 throw new IllegalArgumentException(pluginId  + "不存在 context");
             }
