@@ -1,14 +1,11 @@
 package run.halo.app.extensions;
 
 import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
 import java.util.Set;
 import lombok.extern.slf4j.Slf4j;
 import org.pf4j.PluginWrapper;
 import org.springframework.beans.factory.annotation.AutowiredAnnotationBeanPostProcessor;
 import org.springframework.beans.factory.support.DefaultListableBeanFactory;
-import org.springframework.boot.SpringApplication;
 import org.springframework.context.ApplicationContext;
 import org.springframework.lang.NonNull;
 import org.springframework.util.Assert;
@@ -78,38 +75,6 @@ public class PluginApplicationInitializer {
         }
     }
 
-    public void injectExtensions() {
-        // add extensions from classpath (non plugin)
-        Set<String> extensionClassNames = springPluginManager.getExtensionClassNames(null);
-        for (String extensionClassName : extensionClassNames) {
-            try {
-                log.debug("Register extension '{}' as bean", extensionClassName);
-                Class<?> extensionClass = getClass().getClassLoader().loadClass(extensionClassName);
-                registerExtensionAsBean(extensionClass);
-            } catch (ClassNotFoundException e) {
-                log.error(e.getMessage(), e);
-            }
-        }
-
-        // add extensions for each started plugin
-        List<PluginWrapper> startedPlugins = springPluginManager.getStartedPlugins();
-        for (PluginWrapper plugin : startedPlugins) {
-            log.debug("Registering extensions of the plugin '{}' as beans", plugin.getPluginId());
-            extensionClassNames = springPluginManager.getExtensionClassNames(plugin.getPluginId());
-            for (String extensionClassName : extensionClassNames) {
-                try {
-                    log.debug("Register extension '{}' as bean", extensionClassName);
-                    Class<?> extensionClass =
-                        plugin.getPluginClassLoader().loadClass(extensionClassName);
-                    registerExtensionAsBean(extensionClass);
-                    //classRegistry.register(plugin.getPluginId(), extensionClass);
-                } catch (ClassNotFoundException e) {
-                    log.error(e.getMessage(), e);
-                }
-            }
-        }
-    }
-
     private Set<Class<?>> findCandidateComponents(String pluginId) {
         Set<String> extensionClassNames = springPluginManager.getExtensionClassNames(pluginId);
         // add extensions for each started plugin
@@ -127,22 +92,5 @@ public class PluginApplicationInitializer {
             }
         }
         return candidateComponents;
-    }
-
-    /**
-     * Register an extension as bean. Current implementation register extension as singleton using
-     * {@code beanFactory.registerSingleton()}. The extension instance is created using {@code
-     * pluginManager.getExtensionFactory().create(extensionClass)}. The bean name is the extension
-     * class name. Override this method if you wish other register strategy.
-     */
-    protected void registerExtensionAsBean(Class<?> extensionClass) {
-        Map<String, ?> extensionBeanMap =
-            springPluginManager.getRootApplicationContext().getBeansOfType(extensionClass);
-        if (extensionBeanMap.isEmpty()) {
-            springPluginManager.getExtensionFactory().create(extensionClass);
-        } else {
-            log.debug("Bean registration aborted! Extension '{}' already existed as bean!",
-                extensionClass.getName());
-        }
     }
 }
