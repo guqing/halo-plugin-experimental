@@ -12,7 +12,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.pf4j.DefaultPluginManager;
 import org.pf4j.ExtensionFactory;
 import org.pf4j.ExtensionFinder;
-import org.pf4j.ExtensionWrapper;
 import org.pf4j.PluginDependency;
 import org.pf4j.PluginDescriptor;
 import org.pf4j.PluginDescriptorFinder;
@@ -46,9 +45,6 @@ public class SpringPluginManager extends DefaultPluginManager
     private final Map<String, PluginStartingError> startingErrors = new HashMap<>();
     private final ReentrantLock lock = new ReentrantLock();
     private ApplicationContext rootApplicationContext;
-    private boolean autoStartPlugin = true;
-    private PluginRepository pluginRepository;
-
     private PluginApplicationInitializer pluginApplicationInitializer;
     private PluginRequestMappingManager requestMappingManager;
 
@@ -70,7 +66,6 @@ public class SpringPluginManager extends DefaultPluginManager
 
     @Override
     protected ExtensionFactory createExtensionFactory() {
-        //return new SingletonSpringExtensionFactory(this);
         return new SpringExtensionFactory(this);
     }
 
@@ -84,22 +79,8 @@ public class SpringPluginManager extends DefaultPluginManager
         return new ScanningExtensionFinder(this);
     }
 
-    @Override
-    protected PluginRepository createPluginRepository() {
-        this.pluginRepository = super.createPluginRepository();
-        return this.pluginRepository;
-    }
-
     public PluginRepository getPluginRepository() {
-        return pluginRepository;
-    }
-
-    public boolean isAutoStartPlugin() {
-        return autoStartPlugin;
-    }
-
-    public void setAutoStartPlugin(boolean autoStartPlugin) {
-        this.autoStartPlugin = autoStartPlugin;
+        return super.pluginRepository;
     }
 
     public ApplicationContext getRootApplicationContext() {
@@ -140,52 +121,6 @@ public class SpringPluginManager extends DefaultPluginManager
         return this.getExtensions(extensionFinder.find(type, pluginId));
     }
 
-    @Override
-    @SuppressWarnings("unchecked")
-    public List getExtensions(String pluginId) {
-        List<ExtensionWrapper> extensionsWrapper = extensionFinder.find(pluginId);
-        List extensions = new ArrayList<>(extensionsWrapper.size());
-        for (ExtensionWrapper extensionWrapper : extensionsWrapper) {
-            try {
-                PluginApplicationContext pluginApplicationContext =
-                    getPluginApplicationContext(pluginId);
-                Object extension = getExtension(pluginApplicationContext, extensionWrapper);
-                extensions.add(extension);
-            } catch (PluginRuntimeException e) {
-                log.error("Cannot retrieve extension", e);
-            }
-        }
-
-        return extensions;
-    }
-
-    @NonNull
-    @SuppressWarnings("unchecked")
-    private synchronized <T> T getExtension(PluginApplicationContext pluginApplicationContext,
-                                            ExtensionWrapper<T> extensionWrapper) {
-        T extension = extensionWrapper.getExtension();
-        if (extension == null) {
-            Class<?> extensionClass = extensionWrapper.getDescriptor().extensionClass;
-            extension = (T) pluginApplicationContext.getBean(extensionClass);
-        }
-        return extension;
-    }
-
-    protected <T> List<T> getExtensions(PluginApplicationContext pluginApplicationContext,
-                                        List<ExtensionWrapper<T>> extensionsWrapper) {
-        List<T> extensions = new ArrayList<>(extensionsWrapper.size());
-        for (ExtensionWrapper<T> extensionWrapper : extensionsWrapper) {
-            try {
-                T extension = getExtension(pluginApplicationContext, extensionWrapper);
-                extensions.add(extension);
-            } catch (PluginRuntimeException e) {
-                log.error("Cannot retrieve extension", e);
-            }
-        }
-
-        return extensions;
-    }
-
     private void doStopPlugins() {
         startingErrors.clear();
         // stop started plugins in reverse order
@@ -215,7 +150,7 @@ public class SpringPluginManager extends DefaultPluginManager
     }
 
     @Override
-    protected synchronized void firePluginStateEvent(PluginStateEvent event) {
+    protected void firePluginStateEvent(PluginStateEvent event) {
         rootApplicationContext.publishEvent(
             new HaloPluginStateChangedEvent(this, event.getPlugin(), event.getOldState()));
         super.firePluginStateEvent(event);
@@ -323,7 +258,6 @@ public class SpringPluginManager extends DefaultPluginManager
     }
 
     private PluginState doStartPlugin(String pluginId) {
-        System.out.println("启动：" + pluginId);
         checkPluginId(pluginId);
 
         PluginWrapper pluginWrapper = getPlugin(pluginId);

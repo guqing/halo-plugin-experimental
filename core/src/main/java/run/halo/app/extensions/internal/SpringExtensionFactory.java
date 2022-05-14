@@ -100,6 +100,8 @@ public class SpringExtensionFactory implements ExtensionFactory {
         Optional<PluginApplicationContext> contextOptional =
             getPluginApplicationContextBy(extensionClass);
         if (contextOptional.isPresent()) {
+            // When the plugin starts, the class has been loaded into the plugin application context,
+            // so you only need to get it directly
             PluginApplicationContext pluginApplicationContext = contextOptional.get();
             return pluginApplicationContext.getBean(extensionClass);
         }
