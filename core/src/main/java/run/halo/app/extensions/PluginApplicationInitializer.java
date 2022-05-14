@@ -6,13 +6,12 @@ import java.util.Map;
 import java.util.Set;
 import lombok.extern.slf4j.Slf4j;
 import org.pf4j.PluginWrapper;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.AutowiredAnnotationBeanPostProcessor;
 import org.springframework.beans.factory.support.DefaultListableBeanFactory;
+import org.springframework.boot.SpringApplication;
 import org.springframework.context.ApplicationContext;
+import org.springframework.lang.NonNull;
 import org.springframework.util.Assert;
-import run.halo.app.extensions.internal.ExtensionInjectedEvent;
 import run.halo.app.extensions.registry.ExtensionContextRegistry;
 
 /**
@@ -29,7 +28,7 @@ public class PluginApplicationInitializer {
     }
 
     public ApplicationContext getRootApplicationContext() {
-        return this.springPluginManager.getApplicationContext();
+        return this.springPluginManager.getRootApplicationContext();
     }
 
     private PluginApplicationContext createPluginApplicationContext(String pluginId) {
@@ -64,6 +63,11 @@ public class PluginApplicationInitializer {
 
     public void onStartUp(String pluginId) {
         initApplicationContext(pluginId);
+    }
+
+    @NonNull
+    public PluginApplicationContext getPluginApplicationContext(String pluginId) {
+        return contextRegistry.getByPluginId(pluginId);
     }
 
     public void contextDestroyed(String pluginId) {
@@ -133,7 +137,7 @@ public class PluginApplicationInitializer {
      */
     protected void registerExtensionAsBean(Class<?> extensionClass) {
         Map<String, ?> extensionBeanMap =
-            springPluginManager.getApplicationContext().getBeansOfType(extensionClass);
+            springPluginManager.getRootApplicationContext().getBeansOfType(extensionClass);
         if (extensionBeanMap.isEmpty()) {
             springPluginManager.getExtensionFactory().create(extensionClass);
         } else {

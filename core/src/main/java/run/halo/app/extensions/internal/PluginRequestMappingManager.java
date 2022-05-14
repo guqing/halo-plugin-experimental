@@ -3,8 +3,6 @@ package run.halo.app.extensions.internal;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.Collection;
-import java.util.Set;
-import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
 import org.pf4j.PluginWrapper;
 import org.springframework.context.ApplicationContext;
@@ -13,8 +11,6 @@ import org.springframework.stereotype.Controller;
 import org.springframework.util.ReflectionUtils;
 import org.springframework.web.servlet.mvc.method.annotation.RequestMappingHandlerMapping;
 import run.halo.app.extensions.SpringPluginManager;
-import run.halo.app.extensions.registry.ExtensionClassRegistry;
-import run.halo.app.extensions.registry.ExtensionClassRegistry.ClassDescriptor;
 import run.halo.app.extensions.registry.ExtensionContextRegistry;
 
 /**
@@ -78,7 +74,7 @@ public class PluginRequestMappingManager {
     }
 
     public Collection<Object> getControllerBeans(SpringPluginManager pluginManager, String pluginId) {
-        ApplicationContext applicationContext = pluginManager.getApplicationContext();
+        ApplicationContext applicationContext = pluginManager.getRootApplicationContext();
         GenericApplicationContext pluginContext =
             ExtensionContextRegistry.getInstance().getByPluginId(pluginId);
         return pluginContext.getBeansWithAnnotation(Controller.class).values();

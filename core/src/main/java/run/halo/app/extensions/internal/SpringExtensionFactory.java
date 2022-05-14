@@ -1,7 +1,5 @@
 package run.halo.app.extensions.internal;
 
-import static org.springframework.beans.factory.config.BeanDefinition.SCOPE_SINGLETON;
-
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
 import java.util.Comparator;
@@ -17,11 +15,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.config.AutowireCapableBeanFactory;
-import org.springframework.beans.factory.support.BeanDefinitionBuilder;
-import org.springframework.beans.factory.support.DefaultListableBeanFactory;
-import org.springframework.beans.factory.support.GenericBeanDefinition;
 import org.springframework.context.ApplicationContext;
 import org.springframework.lang.Nullable;
+import run.halo.app.extensions.PluginApplicationContext;
 import run.halo.app.extensions.SpringPlugin;
 import run.halo.app.extensions.SpringPluginManager;
 
@@ -101,16 +97,17 @@ public class SpringExtensionFactory implements ExtensionFactory {
                 " autowiring is disabled.");
             return createWithoutSpring(extensionClass);
         }
-        Optional<ApplicationContext> contextOptional = getApplicationContextBy(extensionClass);
+        Optional<PluginApplicationContext> contextOptional =
+            getPluginApplicationContextBy(extensionClass);
         if (contextOptional.isPresent()) {
-            createWithSpring(extensionClass, contextOptional.get());
-            return null;
+            PluginApplicationContext pluginApplicationContext = contextOptional.get();
+            return pluginApplicationContext.getBean(extensionClass);
         }
         return createWithoutSpring(extensionClass);
     }
 
     public String getExtensionBeanName(Class<?> extensionClass) {
-        return getApplicationContextBy(extensionClass)
+        return getPluginApplicationContextBy(extensionClass)
             .map(pluginAppCtx -> pluginAppCtx.getBeanNamesForType(extensionClass))
             .filter(beanNames -> beanNames.length > 0)
             .map(beanNames -> beanNames[0])
@@ -131,20 +128,11 @@ public class SpringExtensionFactory implements ExtensionFactory {
      *
      * @param extensionClass     The class annotated with {@code @}{@link Extension}.
      * @param <T>                The type for that an instance should be created.
-     * @param applicationContext The context to use for autowiring.
+     * @param applicationContext The plugin context to use for autowiring.
      */
     protected <T> void createWithSpring(final Class<T> extensionClass,
-        final ApplicationContext applicationContext) {
-        final DefaultListableBeanFactory beanFactory =
-            (DefaultListableBeanFactory) applicationContext.getAutowireCapableBeanFactory();
-        BeanDefinitionBuilder beanDefinitionBuilder =
-            BeanDefinitionBuilder.genericBeanDefinition(extensionClass);
-        GenericBeanDefinition beanDefinition =
-            (GenericBeanDefinition) beanDefinitionBuilder.getRawBeanDefinition();
-        beanDefinition.setScope(SCOPE_SINGLETON);
-        beanDefinition.setLazyInit(true);
-        beanDefinition.setAutowireMode(GenericBeanDefinition.AUTOWIRE_BY_TYPE);
-        beanFactory.registerBeanDefinition(extensionClass.getName(), beanDefinition);
+                                        final PluginApplicationContext applicationContext) {
+        applicationContext.registerBean(extensionClass);
     }
 
     /**
@@ -171,7 +159,8 @@ public class SpringExtensionFactory implements ExtensionFactory {
                 + "'with standard Java reflection.");
             // Creating the instance by calling the constructor with null-parameters (if there are any).
             return (T) constructor.newInstance(nullParameters(constructor));
-        } catch (final InstantiationException | IllegalAccessException | InvocationTargetException ex) {
+        } catch (final InstantiationException | IllegalAccessException |
+                       InvocationTargetException ex) {
             // If one of these exceptions is thrown it it most likely because of NPE inside the called constructor and
             // not the reflective call itself as we precisely searched for a fitting constructor.
             log.error(ex.getMessage(), ex);
@@ -193,13 +182,13 @@ public class SpringExtensionFactory implements ExtensionFactory {
         return new Object[constructor.getParameterCount()];
     }
 
-    protected <T> Optional<ApplicationContext> getApplicationContextBy(
+    protected <T> Optional<PluginApplicationContext> getPluginApplicationContextBy(
         final Class<T> extensionClass) {
         final Plugin plugin = Optional.ofNullable(this.pluginManager.whichPlugin(extensionClass))
             .map(PluginWrapper::getPlugin)
             .orElse(null);
 
-        final ApplicationContext applicationContext;
+        final PluginApplicationContext applicationContext;
 
         if (plugin instanceof SpringPlugin) {
             log.debug(
@@ -207,13 +196,15 @@ public class SpringExtensionFactory implements ExtensionFactory {
                     + nameOf(plugin)
                     + "' and will be autowired by using its application context.");
             applicationContext = ((SpringPlugin) plugin).getApplicationContext();
-        } else if (this.pluginManager instanceof SpringPluginManager) {
+        } else if (this.pluginManager instanceof SpringPluginManager && plugin != null) {
             log.debug("  Extension class ' " + nameOf(extensionClass)
                 + "' belongs to a non halo-plugin (or main application)" +
                 " '" + nameOf(plugin)
                 + ", but the used Halo plugin-manager is a spring-plugin-manager. Therefore" +
                 " the extension class will be autowired by using the managers application contexts");
-            applicationContext = ((SpringPluginManager) this.pluginManager).getApplicationContext();
+            String pluginId = plugin.getWrapper().getPluginId();
+            applicationContext = ((SpringPluginManager) this.pluginManager)
+                .getPluginApplicationContext(pluginId);
         } else {
             log.warn("  No application contexts can be used for instantiating extension class '"
                 + nameOf(extensionClass) + "'."

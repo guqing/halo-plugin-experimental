@@ -16,6 +16,7 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RestController;
 import run.halo.app.extensions.SpringPluginManager;
+import run.halo.app.extensions.TestExtPoint;
 import run.halo.app.extensions.config.model.PluginInfo;
 
 /**
@@ -35,6 +36,9 @@ public class PluginManagerController {
 
     @GetMapping(value = "${halo.plugin.controller.base-path:/plugins}/list")
     public List<PluginInfo> list() {
+        for (TestExtPoint extension : pluginManager.getExtensions(TestExtPoint.class)) {
+            System.out.println("--->" + extension.getName());
+        }
         List<PluginWrapper> loadedPlugins = pluginManager.getPlugins();
 
         // loaded plugins

@@ -90,7 +90,7 @@ public class ExtensionList<T> extends AbstractList<T> {
                 .getAllExtPoints()
                 .stream()
                 .filter(extensionType::isAssignableFrom)
-                .map(t -> (T) pluginManager.getApplicationContext().getBean(t))
+                .map(t -> (T) pluginManager.getExtensions(t))
                 .map(ExtensionComponent::create)
                 .collect(Collectors.toList());
             this.extensions = sort(collect);

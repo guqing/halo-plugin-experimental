@@ -30,9 +30,6 @@ import run.halo.app.extensions.registry.PluginListenerRegistry;
 public class PluginStateChangedListener {
 
     @Autowired
-    private ExtensionPointFinder extensionPointFinder;
-
-    @Autowired
     private PluginListenerRegistry listenerRegistry;
 
     @EventListener(HaloPluginStartedEvent.class)
@@ -44,14 +41,12 @@ public class PluginStateChangedListener {
             listenerRegistry.addPluginListener(event.getPlugin().getPluginId(), listenerClass);
         }
 
-        this.extensionPointFinder.refreshExtensions();
         log.info("The plugin starts successfully.");
     }
 
     @EventListener(HaloPluginStoppedEvent.class)
     public void onPluginStopped(HaloPluginStoppedEvent event) {
         listenerRegistry.removePluginListener(event.getPlugin().getPluginId());
-        this.extensionPointFinder.refreshExtensions();
         log.info("Plugin {} is stopped", event.getPlugin().getPluginId());
     }
 }

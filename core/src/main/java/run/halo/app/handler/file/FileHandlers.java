@@ -1,6 +1,8 @@
 package run.halo.app.handler.file;
 
+import java.util.List;
 import lombok.extern.slf4j.Slf4j;
+import org.pf4j.PluginManager;
 import org.springframework.lang.NonNull;
 import org.springframework.stereotype.Component;
 import org.springframework.util.Assert;
@@ -23,11 +25,10 @@ import run.halo.app.model.support.UploadResult;
 @Component
 public class FileHandlers {
 
-    private final ExtensionPointFinder extensionPointFinder;
+    private final PluginManager pluginManager;
 
-
-    public FileHandlers(ExtensionPointFinder extensionPointFinder) {
-        this.extensionPointFinder = extensionPointFinder;
+    public FileHandlers(PluginManager pluginManager) {
+        this.pluginManager = pluginManager;
         // Add all file handler
         //addFileHandlers(applicationContext.getBeansOfType(FileHandler.class).values());
     }
@@ -43,7 +44,7 @@ public class FileHandlers {
      */
     @NonNull
     public UploadResult upload(@NonNull MultipartFile file,
-        @NonNull AttachmentType attachmentType) {
+                               @NonNull AttachmentType attachmentType) {
         return getSupportedType(attachmentType).upload(file);
     }
 
@@ -61,13 +62,12 @@ public class FileHandlers {
     }
 
     private FileHandler getSupportedType(AttachmentType type) {
-        ExtensionList<FileHandler> extensionList = extensionPointFinder.lookup(FileHandler.class);
+        List<FileHandler> extensions = pluginManager.getExtensions(FileHandler.class);
 
-        for (ExtensionComponent<FileHandler> extensionComponent : extensionList.getComponents()) {
-            FileHandler instance = extensionComponent.getInstance();
-            if (instance.getAttachmentType() == type) {
-                log.info("Used {} file handler(s)", instance);
-                return instance;
+        for (FileHandler fileHandler : extensions) {
+            if (fileHandler.getAttachmentType() == type) {
+                log.info("Used {} file handler(s)", fileHandler);
+                return fileHandler;
             }
         }
         throw new FileOperationException("No available file handlers to operate the file")

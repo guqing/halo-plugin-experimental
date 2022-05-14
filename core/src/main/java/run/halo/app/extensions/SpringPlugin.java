@@ -8,14 +8,20 @@ import org.springframework.context.ApplicationContext;
 @Slf4j
 public abstract class SpringPlugin extends Plugin {
 
-    private final ApplicationContext applicationContext;
+    private PluginApplicationContext applicationContext;
 
     public SpringPlugin(PluginWrapper wrapper) {
         super(wrapper);
-        this.applicationContext = getPluginManager().getApplicationContext();
     }
 
-    public final ApplicationContext getApplicationContext() {
+    /**
+     * @return Plugin application context.
+     */
+    public synchronized final PluginApplicationContext getApplicationContext() {
+        if (applicationContext == null) {
+            applicationContext =
+                getPluginManager().getPluginApplicationContext(this.wrapper.getPluginId());
+        }
         return applicationContext;
     }
 
