@@ -1,30 +1,7 @@
 package run.halo.app.extensions.registry;
 
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableSet;
-import java.lang.annotation.Annotation;
-import java.lang.reflect.Method;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.LinkedList;
-import java.util.List;
 import java.util.Map;
-import java.util.Objects;
-import java.util.Set;
-import java.util.concurrent.locks.ReentrantReadWriteLock;
-import java.util.function.Predicate;
-import java.util.stream.Collectors;
-import org.pf4j.Extension;
-import org.pf4j.ExtensionPoint;
-import org.springframework.context.ApplicationListener;
-import org.springframework.context.event.EventListener;
-import org.springframework.context.support.GenericApplicationContext;
-import org.springframework.core.annotation.AnnotatedElementUtils;
-import org.springframework.stereotype.Component;
-import org.springframework.stereotype.Controller;
-import org.springframework.util.Assert;
-import org.springframework.util.CollectionUtils;
+import java.util.concurrent.ConcurrentHashMap;
 import run.halo.app.extensions.PluginApplicationContext;
 
 /**
@@ -34,8 +11,7 @@ import run.halo.app.extensions.PluginApplicationContext;
 public class ExtensionContextRegistry {
     private static final ExtensionContextRegistry INSTANCE = new ExtensionContextRegistry();
 
-    private final Map<String, PluginApplicationContext> registry = new HashMap<>();
-    private final ReentrantReadWriteLock readWriteLock = new ReentrantReadWriteLock();
+    private final Map<String, PluginApplicationContext> registry = new ConcurrentHashMap<>();
 
     public static ExtensionContextRegistry getInstance() {
         return INSTANCE;
@@ -44,52 +20,21 @@ public class ExtensionContextRegistry {
     private ExtensionContextRegistry() {
     }
 
-    /**
-     * Acquire the read lock when using getMappings and getMappingsByUrl.
-     */
-    public void acquireReadLock() {
-        this.readWriteLock.readLock().lock();
-    }
-
-    /**
-     * Release the read lock after using getMappings and getMappingsByUrl.
-     */
-    public void releaseReadLock() {
-        this.readWriteLock.readLock().unlock();
-    }
-
     public void register(String pluginId, PluginApplicationContext context) {
-        this.readWriteLock.writeLock().lock();
-        try {
-            if (!context.isActive()) {
-                context.refresh();
-            }
-            registry.put(pluginId, context);
-        } finally {
-            this.readWriteLock.writeLock().unlock();
-        }
+        registry.put(pluginId, context);
     }
 
     public PluginApplicationContext remove(String pluginId) {
-        this.readWriteLock.writeLock().lock();
-        try {
-            return registry.remove(pluginId);
-        } finally {
-            this.readWriteLock.writeLock().unlock();
-        }
+        return registry.remove(pluginId);
     }
 
     public PluginApplicationContext getByPluginId(String pluginId) {
-        this.readWriteLock.readLock().lock();
-        try {
-            PluginApplicationContext context = registry.get(pluginId);
-            if(context == null) {
-                throw new IllegalArgumentException(pluginId  + "不存在 context");
-            }
-            return context;
-        } finally {
-            this.readWriteLock.readLock().unlock();
+        PluginApplicationContext context = registry.get(pluginId);
+        if (context == null) {
+            throw new IllegalArgumentException(
+                String.format("The plugin [%s] can not be found.", pluginId));
         }
+        return context;
     }
 
     public boolean containsContext(String pluginId) {
