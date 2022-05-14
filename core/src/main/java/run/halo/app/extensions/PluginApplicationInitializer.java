@@ -7,6 +7,7 @@ import org.pf4j.PluginWrapper;
 import org.springframework.beans.factory.annotation.AutowiredAnnotationBeanPostProcessor;
 import org.springframework.beans.factory.support.DefaultListableBeanFactory;
 import org.springframework.context.ApplicationContext;
+import org.springframework.core.io.DefaultResourceLoader;
 import org.springframework.lang.NonNull;
 import org.springframework.util.Assert;
 import run.halo.app.extensions.registry.ExtensionContextRegistry;
@@ -18,6 +19,7 @@ import run.halo.app.extensions.registry.ExtensionContextRegistry;
 @Slf4j
 public class PluginApplicationInitializer {
     protected final SpringPluginManager springPluginManager;
+
     private final ExtensionContextRegistry contextRegistry = ExtensionContextRegistry.getInstance();
 
     public PluginApplicationInitializer(SpringPluginManager springPluginManager) {
@@ -29,8 +31,15 @@ public class PluginApplicationInitializer {
     }
 
     private PluginApplicationContext createPluginApplicationContext(String pluginId) {
+        PluginWrapper plugin = springPluginManager.getPlugin(pluginId);
+        ClassLoader pluginClassLoader = plugin.getPluginClassLoader();
+
         PluginApplicationContext pluginApplicationContext = new PluginApplicationContext();
         pluginApplicationContext.setParent(getRootApplicationContext());
+        pluginApplicationContext.setClassLoader(pluginClassLoader);
+
+        DefaultResourceLoader defaultResourceLoader = new DefaultResourceLoader(pluginClassLoader);
+        pluginApplicationContext.setResourceLoader(defaultResourceLoader);
 
         DefaultListableBeanFactory beanFactory =
             (DefaultListableBeanFactory) pluginApplicationContext.getBeanFactory();
