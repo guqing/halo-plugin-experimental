@@ -73,12 +73,27 @@ public class PluginApplicationInitializer {
             log.debug("Plugin application context for [{}] has bean initialized.", pluginId);
             return;
         }
+        StopWatch stopWatch = new StopWatch();
+
+        stopWatch.start("createPluginApplicationContext");
         PluginApplicationContext pluginApplicationContext =
             createPluginApplicationContext(pluginId);
-        for (Class<?> component : findCandidateComponents(pluginId)) {
+        stopWatch.stop();
+
+        stopWatch.start("findCandidateComponents");
+        Set<Class<?>> candidateComponents = findCandidateComponents(pluginId);
+        stopWatch.stop();
+
+        stopWatch.start("registerBean");
+        for (Class<?> component : candidateComponents) {
             log.debug("Register a plugin component class [{}] to context", component);
             pluginApplicationContext.registerBean(component);
         }
+        stopWatch.stop();
+
+        System.out.println(
+            "initApplicationContext total millis: " + stopWatch.getTotalTimeMillis() + "ms -> "
+                + stopWatch.prettyPrint());
     }
 
     public void onStartUp(String pluginId) {
@@ -99,7 +114,12 @@ public class PluginApplicationInitializer {
     }
 
     private Set<Class<?>> findCandidateComponents(String pluginId) {
+        StopWatch stopWatch = new StopWatch("findCandidateComponents");
+
+        stopWatch.start("getExtensionClassNames");
         Set<String> extensionClassNames = springPluginManager.getExtensionClassNames(pluginId);
+        stopWatch.stop();
+
         // add extensions for each started plugin
         PluginWrapper plugin = springPluginManager.getPlugin(pluginId);
         log.debug("Registering extensions of the plugin '{}' as beans", pluginId);
@@ -107,13 +127,18 @@ public class PluginApplicationInitializer {
         for (String extensionClassName : extensionClassNames) {
             log.debug("Load extension class '{}'", extensionClassName);
             try {
+                stopWatch.start("loadClass");
                 Class<?> extensionClass =
                     plugin.getPluginClassLoader().loadClass(extensionClassName);
+                stopWatch.stop();
+
                 candidateComponents.add(extensionClass);
             } catch (ClassNotFoundException e) {
                 log.error(e.getMessage(), e);
             }
         }
+        System.out.println(
+            "total millis: " + stopWatch.getTotalTimeMillis() + "ms ->" + stopWatch.prettyPrint());
         return candidateComponents;
     }
 }
