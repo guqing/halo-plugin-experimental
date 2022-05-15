@@ -25,6 +25,7 @@ import org.springframework.beans.factory.InitializingBean;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.ApplicationContextAware;
 import org.springframework.lang.NonNull;
+import org.springframework.util.StopWatch;
 import run.halo.app.extensions.config.model.PluginStartingError;
 import run.halo.app.extensions.event.HaloPluginStartedEvent;
 import run.halo.app.extensions.event.HaloPluginStateChangedEvent;
@@ -259,7 +260,8 @@ public class SpringPluginManager extends DefaultPluginManager
 
     private PluginState doStartPlugin(String pluginId) {
         checkPluginId(pluginId);
-
+        StopWatch stopWatch = new StopWatch();
+        stopWatch.start("根据插件id获取插件");
         PluginWrapper pluginWrapper = getPlugin(pluginId);
         PluginDescriptor pluginDescriptor = pluginWrapper.getDescriptor();
         PluginState pluginState = pluginWrapper.getPluginState();
@@ -279,23 +281,32 @@ public class SpringPluginManager extends DefaultPluginManager
                 return pluginState;
             }
         }
+        stopWatch.stop();
 
+        stopWatch.start("启动插件依赖项");
         for (PluginDependency dependency : pluginDescriptor.getDependencies()) {
-            // start dependency only if it marked as required (non optional) or if it optional and loaded
+            // start dependency only if it marked as required (non-optional) or if it optional and loaded
             if (!dependency.isOptional() || plugins.containsKey(dependency.getPluginId())) {
                 startPlugin(dependency.getPluginId());
             }
         }
-
+        stopWatch.stop();
         log.info("Start plugin '{}'", getPluginLabel(pluginDescriptor));
 
         try {
+            stopWatch.start("创建插件application context");
             // load and inject bean
             pluginApplicationInitializer.onStartUp(pluginId);
+            stopWatch.stop();
+
             // create plugin instance and start it
             pluginWrapper.getPlugin().start();
 
+            stopWatch.start("注册插件APIs");
             requestMappingManager.registerControllers(pluginWrapper);
+            stopWatch.stop();
+            log.debug("Total millis: {} ms -> {}", stopWatch.getTotalTimeMillis(), stopWatch.prettyPrint());
+
             pluginWrapper.setPluginState(PluginState.STARTED);
             startedPlugins.add(pluginWrapper);
 

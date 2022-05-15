@@ -10,6 +10,7 @@ import org.springframework.context.ApplicationContext;
 import org.springframework.core.io.DefaultResourceLoader;
 import org.springframework.lang.NonNull;
 import org.springframework.util.Assert;
+import org.springframework.util.StopWatch;
 import run.halo.app.extensions.registry.ExtensionContextRegistry;
 
 /**
@@ -34,23 +35,35 @@ public class PluginApplicationInitializer {
         PluginWrapper plugin = springPluginManager.getPlugin(pluginId);
         ClassLoader pluginClassLoader = plugin.getPluginClassLoader();
 
+        StopWatch stopWatch = new StopWatch("initialize-plugin-context");
+        stopWatch.start("创建 PluginApplicationContext");
         PluginApplicationContext pluginApplicationContext = new PluginApplicationContext();
         pluginApplicationContext.setParent(getRootApplicationContext());
         pluginApplicationContext.setClassLoader(pluginClassLoader);
+        stopWatch.stop();
 
+        stopWatch.start("创建插件 DefaultResourceLoader");
         DefaultResourceLoader defaultResourceLoader = new DefaultResourceLoader(pluginClassLoader);
         pluginApplicationContext.setResourceLoader(defaultResourceLoader);
+        stopWatch.stop();
 
         DefaultListableBeanFactory beanFactory =
             (DefaultListableBeanFactory) pluginApplicationContext.getBeanFactory();
 
+        stopWatch.start("创建 AutowiredAnnotationBeanPostProcessor");
         AutowiredAnnotationBeanPostProcessor autowiredAnnotationBeanPostProcessor =
             new AutowiredAnnotationBeanPostProcessor();
         autowiredAnnotationBeanPostProcessor.setBeanFactory(beanFactory);
+        stopWatch.stop();
 
         beanFactory.addBeanPostProcessor(autowiredAnnotationBeanPostProcessor);
-
+        stopWatch.start("刷新插件 Application Context");
         pluginApplicationContext.refresh();
+        stopWatch.stop();
+
+        log.debug("Total millis: {} ms -> {}", stopWatch.getTotalTimeMillis(),
+            stopWatch.prettyPrint());
+
         contextRegistry.register(pluginId, pluginApplicationContext);
         return pluginApplicationContext;
     }
