@@ -50,6 +50,7 @@ public class PluginApplicationInitializer {
 
         beanFactory.addBeanPostProcessor(autowiredAnnotationBeanPostProcessor);
 
+        pluginApplicationContext.refresh();
         contextRegistry.register(pluginId, pluginApplicationContext);
         return pluginApplicationContext;
     }
