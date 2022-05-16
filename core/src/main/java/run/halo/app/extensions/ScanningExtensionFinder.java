@@ -22,6 +22,7 @@ import org.springframework.stereotype.Component;
 import org.springframework.stereotype.Controller;
 import org.springframework.stereotype.Repository;
 import org.springframework.stereotype.Service;
+import org.springframework.util.StopWatch;
 import org.springframework.web.bind.annotation.RestController;
 import run.halo.app.Application;
 import run.halo.app.extensions.ac.ClassReadUtils;
@@ -44,7 +45,8 @@ public class ScanningExtensionFinder extends AbstractExtensionFinder {
     public Map<String, Set<String>> readPluginsStorages() {
         log.debug("Reading extensions storages from plugins");
         Map<String, Set<String>> result = new LinkedHashMap<>();
-
+        StopWatch stopWatch = new StopWatch();
+        stopWatch.start("readPluginsStorages");
         List<PluginWrapper> plugins = pluginManager.getPlugins();
         for (PluginWrapper plugin : plugins) {
             String pluginId = plugin.getDescriptor().getPluginId();
@@ -73,7 +75,8 @@ public class ScanningExtensionFinder extends AbstractExtensionFinder {
 
             result.put(pluginId, bucket);
         }
-
+        stopWatch.stop();
+        System.out.println(stopWatch.getTotalTimeMillis() + "ms -> " + stopWatch.prettyPrint());
         return result;
     }
 
@@ -120,7 +123,8 @@ public class ScanningExtensionFinder extends AbstractExtensionFinder {
     public Map<String, Set<String>> readClasspathStorages() {
         log.debug("Reading extensions storages from classpath");
         Map<String, Set<String>> result = new LinkedHashMap<>();
-
+        StopWatch stopWatch = new StopWatch();
+        stopWatch.start("readClasspathStorages");
         Set<String> bucket = new HashSet<>();
 
         try (ScanResult scanResult = new ClassGraph()
@@ -141,7 +145,8 @@ public class ScanningExtensionFinder extends AbstractExtensionFinder {
         debugExtensions(bucket);
 
         result.put(null, bucket);
-
+        stopWatch.stop();
+        System.out.println(stopWatch.getTotalTimeMillis() + "ms -> " + stopWatch.prettyPrint());
         return result;
     }
 

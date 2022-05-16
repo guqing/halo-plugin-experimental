@@ -77,7 +77,7 @@ public class SpringPluginManager extends DefaultPluginManager
 
     @Override
     protected ExtensionFinder createExtensionFinder() {
-        return new ScanningExtensionFinder(this);
+        return new SpringComponentsFinder(this);
     }
 
     public PluginRepository getPluginRepository() {
