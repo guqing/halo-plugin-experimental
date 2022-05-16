@@ -1,14 +1,17 @@
 package run.halo.pluggable.processor;
 
+import java.lang.annotation.Annotation;
 import java.lang.reflect.Constructor;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.TreeSet;
+import javax.annotation.Resource;
 import javax.annotation.processing.AbstractProcessor;
 import javax.annotation.processing.ProcessingEnvironment;
 import javax.annotation.processing.RoundEnvironment;
@@ -26,6 +29,11 @@ import org.pf4j.Extension;
 import org.pf4j.ExtensionPoint;
 import org.pf4j.processor.ExtensionStorage;
 import org.pf4j.util.ClassUtils;
+import org.springframework.context.annotation.Configuration;
+import org.springframework.stereotype.Component;
+import org.springframework.stereotype.Controller;
+import org.springframework.stereotype.Service;
+import org.springframework.web.bind.annotation.RestController;
 
 
 /**
@@ -37,21 +45,21 @@ import org.pf4j.util.ClassUtils;
  * @author guqing
  */
 public class PluggableAnnotationProcessor extends AbstractProcessor {
-    private static final List<String> extensionAnnotationNames = List.of("org.pf4j.Extension",
-        "org.springframework.stereotype.Service",
-        "javax.annotation.Resource",
-        "org.springframework.stereotype.Controller",
-        "org.springframework.web.bind.annotation.RestController",
-        "org.springframework.stereotype.Component",
-        "org.springframework.context.annotation.Configuration");
+    private static final List<Class<? extends Annotation>> extensionAnnotationNames = List.of(Extension.class,
+        Service.class,
+        Controller.class,
+        RestController.class,
+        Component.class,
+        Configuration.class);
 
     private static final String STORAGE_CLASS_NAME = "halo.pluggable.storageClassName";
     private static final String IGNORE_EXTENSION_POINT = "halo.pluggable.ignoreExtensionPoint";
 
     private final Map<String, Set<String>> extensions = new HashMap<>();
-        // the key is the extension point
+    private final Set<String> components = new LinkedHashSet<>();
+    // the key is the extension point
     private Map<String, Set<String>> oldExtensions = new HashMap<>();
-        // the key is the extension point
+    // the key is the extension point
 
     private ComponentStorage storage;
     private boolean ignoreExtensionPoint;
@@ -93,9 +101,11 @@ public class PluggableAnnotationProcessor extends AbstractProcessor {
         }
 
         info("Processing @%s", Extension.class.getName());
-        for (Element element : roundEnv.getElementsAnnotatedWith(Extension.class)) {
-            if (element.getKind() != ElementKind.ANNOTATION_TYPE) {
-                processExtensionElement(element);
+        for (Class<? extends Annotation> extensionAnnotation : extensionAnnotationNames) {
+            for (Element element : roundEnv.getElementsAnnotatedWith(extensionAnnotation)) {
+                if (element.getKind() != ElementKind.ANNOTATION_TYPE) {
+                    processExtensionElement(element);
+                }
             }
         }
 
@@ -108,20 +118,8 @@ public class PluggableAnnotationProcessor extends AbstractProcessor {
                 processExtensionElement(element);
             }
         }
-
-        // read old extensions
-        oldExtensions = storage.read();
-        for (Map.Entry<String, Set<String>> entry : oldExtensions.entrySet()) {
-            String extensionPoint = entry.getKey();
-            if (extensions.containsKey(extensionPoint)) {
-                extensions.get(extensionPoint).addAll(entry.getValue());
-            } else {
-                extensions.put(extensionPoint, entry.getValue());
-            }
-        }
-
         // write extensions
-        storage.write(extensions);
+        storage.write(components);
 
         return false;
     }
@@ -130,24 +128,13 @@ public class PluggableAnnotationProcessor extends AbstractProcessor {
         // collect nested extension annotations
         List<TypeElement> extensionAnnotations = new ArrayList<>();
         for (TypeElement annotation : annotations) {
-            for (String extensionAnnotationName : extensionAnnotationNames) {
-                if (getAnnotationMirror(annotation, extensionAnnotationName) != null) {
+            for (Class<? extends Annotation> extensionAnnotation : extensionAnnotationNames) {
+                if (ClassUtils.getAnnotationMirror(annotation, extensionAnnotation) != null) {
                     extensionAnnotations.add(annotation);
                 }
             }
         }
         return extensionAnnotations;
-    }
-
-    public static AnnotationMirror getAnnotationMirror(TypeElement typeElement,
-                                                       String annotationClassName) {
-        for (AnnotationMirror m : typeElement.getAnnotationMirrors()) {
-            if (m.getAnnotationType().toString().equals(annotationClassName)) {
-                return m;
-            }
-        }
-
-        return null;
     }
 
     public ProcessingEnvironment getProcessingEnvironment() {
@@ -178,8 +165,8 @@ public class PluggableAnnotationProcessor extends AbstractProcessor {
         return processingEnv.getElementUtils().getBinaryName(element).toString();
     }
 
-    public Map<String, Set<String>> getExtensions() {
-        return extensions;
+    public Set<String> getComponents() {
+        return this.components;
     }
 
     public Map<String, Set<String>> getOldExtensions() {
@@ -191,6 +178,7 @@ public class PluggableAnnotationProcessor extends AbstractProcessor {
     }
 
     private void processExtensionElement(Element element) {
+        System.out.println("processExtensionElement: " + element);
         // check if @Extension is put on class and not on method or constructor
         if (!(element instanceof TypeElement)) {
             error(element, "Put annotation only on classes (no methods, no fields)");
@@ -198,94 +186,21 @@ public class PluggableAnnotationProcessor extends AbstractProcessor {
         }
 
         // check if class extends/implements an extension point
-        if (!ignoreExtensionPoint && !isExtension(element.asType())) {
-            error(element, "%s is not an extension (it doesn't implement ExtensionPoint)", element);
-            return;
-        }
+//        if (!ignoreExtensionPoint && !isExtension(element.asType())) {
+//            error(element, "%s is not an extension (it doesn't implement ExtensionPoint)", element);
+//            return;
+//        }
 
         TypeElement extensionElement = (TypeElement) element;
-        List<TypeElement> extensionPointElements = findExtensionPoints(extensionElement);
-        if (extensionPointElements.isEmpty()) {
-            error(element, "No extension points found for extension %s", extensionElement);
-            return;
-        }
+//        List<TypeElement> extensionPointElements = findExtensionPoints(extensionElement);
+//        if (extensionPointElements.isEmpty()) {
+//            error(element, "No extension points found for extension %s", extensionElement);
+//            return;
+//        }
 
         String extension = getBinaryName(extensionElement);
-        for (TypeElement extensionPointElement : extensionPointElements) {
-            String extensionPoint = getBinaryName(extensionPointElement);
-            Set<String> extensionPoints =
-                extensions.computeIfAbsent(extensionPoint, k -> new TreeSet<>());
-            extensionPoints.add(extension);
-        }
-    }
-
-    @SuppressWarnings("unchecked")
-    private List<TypeElement> findExtensionPoints(TypeElement extensionElement) {
-        List<TypeElement> extensionPointElements = new ArrayList<>();
-
-        // use extension points, that were explicitly set in the extension annotation
-        AnnotationValue
-            annotatedExtensionPoints =
-            ClassUtils.getAnnotationValue(extensionElement, Extension.class, "points");
-        List<? extends AnnotationValue> extensionPointClasses = (annotatedExtensionPoints != null) ?
-            (List<? extends AnnotationValue>) annotatedExtensionPoints.getValue() :
-            null;
-        if (extensionPointClasses != null && !extensionPointClasses.isEmpty()) {
-            for (AnnotationValue extensionPointClass : extensionPointClasses) {
-                String extensionPointClassName = extensionPointClass.getValue().toString();
-                TypeElement extensionPointElement =
-                    processingEnv.getElementUtils().getTypeElement(extensionPointClassName);
-                extensionPointElements.add(extensionPointElement);
-            }
-        }
-        // detect extension points automatically, if they are not explicitly configured (default behaviour)
-        else {
-            // search in interfaces
-            List<? extends TypeMirror> interfaces = extensionElement.getInterfaces();
-            for (TypeMirror item : interfaces) {
-                boolean isExtensionPoint =
-                    processingEnv.getTypeUtils().isSubtype(item, getExtensionPointType());
-                if (isExtensionPoint) {
-                    extensionPointElements.add(getElement(item));
-                }
-            }
-
-            // search in superclass
-            TypeMirror superclass = extensionElement.getSuperclass();
-            if (superclass.getKind() != TypeKind.NONE) {
-                boolean isExtensionPoint =
-                    processingEnv.getTypeUtils().isSubtype(superclass, getExtensionPointType());
-                if (isExtensionPoint) {
-                    extensionPointElements.add(getElement(superclass));
-                }
-            }
-
-            // pickup the first interface
-            if (extensionPointElements.isEmpty() && ignoreExtensionPoint) {
-                if (interfaces.isEmpty()) {
-                    error(extensionElement,
-                        "Cannot use %s as extension point with %s compiler arg (it doesn't implement any interface)",
-                        extensionElement, IGNORE_EXTENSION_POINT);
-                } else if (interfaces.size() == 1) {
-                    extensionPointElements.add(getElement(interfaces.get(0)));
-                } else {
-                    error(extensionElement,
-                        "Cannot use %s as extension point with %s compiler arg (it implements multiple interfaces)",
-                        extensionElement, IGNORE_EXTENSION_POINT);
-                }
-            }
-        }
-
-        return extensionPointElements;
-    }
-
-    private boolean isExtension(TypeMirror typeMirror) {
-        return processingEnv.getTypeUtils().isAssignable(typeMirror, getExtensionPointType());
-    }
-
-    private TypeMirror getExtensionPointType() {
-        return processingEnv.getElementUtils().getTypeElement(ExtensionPoint.class.getName())
-            .asType();
+        System.out.println("components: " + extension);
+        components.add(extension);
     }
 
     @SuppressWarnings("unchecked")
@@ -301,8 +216,8 @@ public class PluggableAnnotationProcessor extends AbstractProcessor {
             // use reflection to create the storage instance
             try {
                 Class storageClass = getClass().getClassLoader().loadClass(storageClassName);
-                Constructor constructor = storageClass.getConstructor(
-                    org.pf4j.processor.ExtensionAnnotationProcessor.class);
+                Constructor constructor =
+                    storageClass.getConstructor(PluggableAnnotationProcessor.class);
                 storage = (ComponentStorage) constructor.newInstance(this);
             } catch (Exception e) {
                 error(e.getMessage());
