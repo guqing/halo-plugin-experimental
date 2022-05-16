@@ -74,17 +74,15 @@ halo:
   workDir: ${user.home}/halo-plugin/
   cache: memory
   plugin:
-    runtime-mode: deployment # development, deployment
+    runtime-mode: development # development, deployment
     enabled: true
     classes-directories:
       - "build/classes"
       - "build/resources"
     lib-directories:
       - "libs"
-    plugins-root: ${user.home}/halo-plugin/plugins
+    #plugins-root: ${user.home}/halo-plugin/plugins
     controller:
       base-path: plugins
     #    custom-plugin-loaders:
     #      - run.halo.app.CustomPluginLoader
-    main:
-      allow-bean-definition-overriding: true

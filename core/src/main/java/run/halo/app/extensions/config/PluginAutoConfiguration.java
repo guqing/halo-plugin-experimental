@@ -154,7 +154,6 @@ public class PluginAutoConfiguration {
                 }
             };
 
-        pluginManager.setAutoStartPlugin(pluginProperties.isAutoStartPlugin());
         pluginManager.setExactVersionAllowed(pluginProperties.isExactVersionAllowed());
         pluginManager.setSystemVersion(pluginProperties.getSystemVersion());
 

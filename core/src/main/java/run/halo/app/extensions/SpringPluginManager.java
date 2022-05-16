@@ -12,7 +12,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.pf4j.DefaultPluginManager;
 import org.pf4j.ExtensionFactory;
 import org.pf4j.ExtensionFinder;
-import org.pf4j.ExtensionWrapper;
 import org.pf4j.PluginDependency;
 import org.pf4j.PluginDescriptor;
 import org.pf4j.PluginDescriptorFinder;
@@ -26,6 +25,7 @@ import org.springframework.beans.factory.InitializingBean;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.ApplicationContextAware;
 import org.springframework.lang.NonNull;
+import org.springframework.util.StopWatch;
 import run.halo.app.extensions.config.model.PluginStartingError;
 import run.halo.app.extensions.event.HaloPluginStartedEvent;
 import run.halo.app.extensions.event.HaloPluginStateChangedEvent;
@@ -45,10 +45,8 @@ public class SpringPluginManager extends DefaultPluginManager
 
     private final Map<String, PluginStartingError> startingErrors = new HashMap<>();
     private final ReentrantLock lock = new ReentrantLock();
-    private ApplicationContext applicationContext;
-    private boolean autoStartPlugin = true;
-    private PluginRepository pluginRepository;
-    private ExtensionsInjector extensionsInjector;
+    private ApplicationContext rootApplicationContext;
+    private PluginApplicationInitializer pluginApplicationInitializer;
     private PluginRequestMappingManager requestMappingManager;
 
     public SpringPluginManager() {
@@ -69,7 +67,6 @@ public class SpringPluginManager extends DefaultPluginManager
 
     @Override
     protected ExtensionFactory createExtensionFactory() {
-        //return new SingletonSpringExtensionFactory(this);
         return new SpringExtensionFactory(this);
     }
 
@@ -83,46 +80,32 @@ public class SpringPluginManager extends DefaultPluginManager
         return new ScanningExtensionFinder(this);
     }
 
-    @Override
-    protected PluginRepository createPluginRepository() {
-        this.pluginRepository = super.createPluginRepository();
-        return this.pluginRepository;
-    }
-
-    public ExtensionsInjector getExtensionsInjector() {
-        return extensionsInjector;
-    }
-
     public PluginRepository getPluginRepository() {
-        return pluginRepository;
+        return super.pluginRepository;
     }
 
-    public boolean isAutoStartPlugin() {
-        return autoStartPlugin;
-    }
-
-    public void setAutoStartPlugin(boolean autoStartPlugin) {
-        this.autoStartPlugin = autoStartPlugin;
-    }
-
-    public ApplicationContext getApplicationContext() {
-        return this.applicationContext;
+    public ApplicationContext getRootApplicationContext() {
+        return this.rootApplicationContext;
     }
 
     @Override
-    public void setApplicationContext(@NonNull ApplicationContext applicationContext)
+    public void setApplicationContext(@NonNull ApplicationContext rootApplicationContext)
         throws BeansException {
-        this.applicationContext = applicationContext;
+        this.rootApplicationContext = rootApplicationContext;
+    }
+
+    public PluginApplicationContext getPluginApplicationContext(String pluginId) {
+        return pluginApplicationInitializer.getPluginApplicationContext(pluginId);
     }
 
     @Override
     public void afterPropertiesSet() {
         // This method load, start plugins and inject extensions in Spring
         loadPlugins();
-        this.extensionsInjector = new ExtensionsInjector(this);
-        this.extensionsInjector.injectExtensions();
+        this.pluginApplicationInitializer = new PluginApplicationInitializer(this);
 
-        this.requestMappingManager = applicationContext.getBean(PluginRequestMappingManager.class);
+        this.requestMappingManager =
+            rootApplicationContext.getBean(PluginRequestMappingManager.class);
     }
 
     public PluginStartingError getPluginStartingError(String pluginId) {
@@ -137,57 +120,6 @@ public class SpringPluginManager extends DefaultPluginManager
     @Override
     public <T> List<T> getExtensions(Class<T> type, String pluginId) {
         return this.getExtensions(extensionFinder.find(type, pluginId));
-    }
-
-    @Override
-    @SuppressWarnings("unchecked")
-    public List getExtensions(String pluginId) {
-        List<ExtensionWrapper> extensionsWrapper = extensionFinder.find(pluginId);
-        List extensions = new ArrayList<>(extensionsWrapper.size());
-        for (ExtensionWrapper extensionWrapper : extensionsWrapper) {
-            try {
-                Object extension = getExtension(extensionWrapper);
-                extensions.add(extension);
-            } catch (PluginRuntimeException e) {
-                log.error("Cannot retrieve extension", e);
-            }
-        }
-
-        return extensions;
-    }
-
-    @NonNull
-    @SuppressWarnings("unchecked")
-    private synchronized <T> T getExtension(ExtensionWrapper<T> extensionWrapper) {
-        T extension = extensionWrapper.getExtension();
-        if (extension == null) {
-            Class<?> extensionClass = extensionWrapper.getDescriptor().extensionClass;
-            extension = (T) applicationContext.getBean(extensionClass);
-        }
-        return extension;
-    }
-
-    protected <T> List<T> getExtensions(List<ExtensionWrapper<T>> extensionsWrapper) {
-        List<T> extensions = new ArrayList<>(extensionsWrapper.size());
-        for (ExtensionWrapper<T> extensionWrapper : extensionsWrapper) {
-            try {
-                T extension = getExtension(extensionWrapper);
-                extensions.add(extension);
-            } catch (PluginRuntimeException e) {
-                log.error("Cannot retrieve extension", e);
-            }
-        }
-
-        return extensions;
-    }
-
-    // region Plugin State Manipulation
-    public void releaseRegisteredResources(String pluginId) {
-        try {
-            extensionsInjector.unregisterExtensions(pluginId);
-        } catch (Exception e) {
-            log.trace("Release registered resources failed. " + e.getMessage(), e);
-        }
     }
 
     private void doStopPlugins() {
@@ -206,7 +138,7 @@ public class SpringPluginManager extends DefaultPluginManager
                     itr.remove();
                     releaseAdditionalResources(pluginWrapper.getPluginId());
 
-                    applicationContext.publishEvent(
+                    rootApplicationContext.publishEvent(
                         new HaloPluginStoppedEvent(this, pluginWrapper));
                     firePluginStateEvent(new PluginStateEvent(this, pluginWrapper, pluginState));
                 } catch (PluginRuntimeException e) {
@@ -219,8 +151,8 @@ public class SpringPluginManager extends DefaultPluginManager
     }
 
     @Override
-    protected synchronized void firePluginStateEvent(PluginStateEvent event) {
-        applicationContext.publishEvent(
+    protected void firePluginStateEvent(PluginStateEvent event) {
+        rootApplicationContext.publishEvent(
             new HaloPluginStateChangedEvent(this, event.getPlugin(), event.getOldState()));
         super.firePluginStateEvent(event);
     }
@@ -259,7 +191,7 @@ public class SpringPluginManager extends DefaultPluginManager
 
             startedPlugins.remove(pluginWrapper);
 
-            applicationContext.publishEvent(new HaloPluginStoppedEvent(this, pluginWrapper));
+            rootApplicationContext.publishEvent(new HaloPluginStoppedEvent(this, pluginWrapper));
             firePluginStateEvent(new PluginStateEvent(this, pluginWrapper, pluginState));
         } catch (Exception e) {
             log.error(e.getMessage(), e);
@@ -280,7 +212,7 @@ public class SpringPluginManager extends DefaultPluginManager
                 try {
                     log.info("Start plugin '{}'", getPluginLabel(pluginWrapper.getDescriptor()));
                     // inject bean
-                    extensionsInjector.injectExtensionByPluginId(pluginWrapper.getPluginId());
+                    pluginApplicationInitializer.onStartUp(pluginWrapper.getPluginId());
 
                     pluginWrapper.getPlugin().start();
 
@@ -290,14 +222,14 @@ public class SpringPluginManager extends DefaultPluginManager
                     pluginWrapper.setFailedException(null);
                     startedPlugins.add(pluginWrapper);
 
-                    applicationContext.publishEvent(
+                    rootApplicationContext.publishEvent(
                         new HaloPluginStartedEvent(this, pluginWrapper));
                 } catch (Exception | LinkageError e) {
                     pluginWrapper.setPluginState(PluginState.FAILED);
                     pluginWrapper.setFailedException(e);
                     startingErrors.put(pluginWrapper.getPluginId(), PluginStartingError.of(
                         pluginWrapper.getPluginId(), e.getMessage(), e.toString()));
-                    releaseRegisteredResources(pluginWrapper.getPluginId());
+                    releaseAdditionalResources(pluginWrapper.getPluginId());
                     log.error("Unable to start plugin '{}'",
                         getPluginLabel(pluginWrapper.getDescriptor()), e);
                 } finally {
@@ -328,7 +260,8 @@ public class SpringPluginManager extends DefaultPluginManager
 
     private PluginState doStartPlugin(String pluginId) {
         checkPluginId(pluginId);
-
+        StopWatch stopWatch = new StopWatch();
+        stopWatch.start("根据插件id获取插件");
         PluginWrapper pluginWrapper = getPlugin(pluginId);
         PluginDescriptor pluginDescriptor = pluginWrapper.getDescriptor();
         PluginState pluginState = pluginWrapper.getPluginState();
@@ -348,34 +281,43 @@ public class SpringPluginManager extends DefaultPluginManager
                 return pluginState;
             }
         }
+        stopWatch.stop();
 
+        stopWatch.start("启动插件依赖项");
         for (PluginDependency dependency : pluginDescriptor.getDependencies()) {
-            // start dependency only if it marked as required (non optional) or if it optional and loaded
+            // start dependency only if it marked as required (non-optional) or if it optional and loaded
             if (!dependency.isOptional() || plugins.containsKey(dependency.getPluginId())) {
                 startPlugin(dependency.getPluginId());
             }
         }
-
+        stopWatch.stop();
         log.info("Start plugin '{}'", getPluginLabel(pluginDescriptor));
 
         try {
+            stopWatch.start("创建插件application context");
             // load and inject bean
-            extensionsInjector.injectExtensionByPluginId(pluginId);
+            pluginApplicationInitializer.onStartUp(pluginId);
+            stopWatch.stop();
 
+            // create plugin instance and start it
             pluginWrapper.getPlugin().start();
 
+            stopWatch.start("注册插件APIs");
             requestMappingManager.registerControllers(pluginWrapper);
+            stopWatch.stop();
+            log.debug("Total millis: {} ms -> {}", stopWatch.getTotalTimeMillis(), stopWatch.prettyPrint());
+
             pluginWrapper.setPluginState(PluginState.STARTED);
             startedPlugins.add(pluginWrapper);
 
-            applicationContext.publishEvent(new HaloPluginStartedEvent(this, pluginWrapper));
+            rootApplicationContext.publishEvent(new HaloPluginStartedEvent(this, pluginWrapper));
         } catch (Exception e) {
             log.error("Unable to start plugin '{}'",
                 getPluginLabel(pluginWrapper.getDescriptor()), e);
             pluginWrapper.setPluginState(PluginState.FAILED);
             startingErrors.put(pluginWrapper.getPluginId(), PluginStartingError.of(
                 pluginWrapper.getPluginId(), e.getMessage(), e.toString()));
-            releaseRegisteredResources(pluginId);
+            releaseAdditionalResources(pluginId);
         } finally {
             firePluginStateEvent(new PluginStateEvent(this, pluginWrapper, pluginState));
         }
@@ -424,8 +366,11 @@ public class SpringPluginManager extends DefaultPluginManager
         // release request mapping
         requestMappingManager
             .removeControllerMapping(this, pluginId);
-        // release extension bean
-        releaseRegisteredResources(pluginId);
+        try {
+            pluginApplicationInitializer.contextDestroyed(pluginId);
+        } catch (Exception e) {
+            log.trace("Plugin application context close failed. ", e);
+        }
     }
 
     // end-region

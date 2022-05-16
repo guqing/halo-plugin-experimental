@@ -102,8 +102,7 @@ public class ScanningExtensionFinder extends AbstractExtensionFinder {
             Controller.class.getName(),
             RestController.class.getName(),
             Component.class.getName(),
-            Configuration.class.getName(),
-            Entity.class.getName());
+            Configuration.class.getName());
 
         for (String extensionAnnotationName : extensionAnnotationNames) {
             ClassInfoList classesWithAnnotation =

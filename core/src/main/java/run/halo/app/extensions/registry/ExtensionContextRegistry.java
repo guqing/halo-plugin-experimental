@@ -2,7 +2,7 @@ package run.halo.app.extensions.registry;
 
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
-import org.springframework.context.support.GenericApplicationContext;
+import run.halo.app.extensions.PluginApplicationContext;
 
 /**
  * @author guqing
@@ -11,7 +11,7 @@ import org.springframework.context.support.GenericApplicationContext;
 public class ExtensionContextRegistry {
     private static final ExtensionContextRegistry INSTANCE = new ExtensionContextRegistry();
 
-    private final Map<String, GenericApplicationContext> registry = new ConcurrentHashMap<>();
+    private final Map<String, PluginApplicationContext> registry = new ConcurrentHashMap<>();
 
     public static ExtensionContextRegistry getInstance() {
         return INSTANCE;
@@ -20,23 +20,19 @@ public class ExtensionContextRegistry {
     private ExtensionContextRegistry() {
     }
 
-    public void register(String pluginId, GenericApplicationContext context) {
-        if (!context.isActive()) {
-            context.refresh();
-        }
+    public void register(String pluginId, PluginApplicationContext context) {
         registry.put(pluginId, context);
     }
 
-    public void unregister(String pluginId) {
-        GenericApplicationContext context = registry.remove(pluginId);
-        context.close();
+    public PluginApplicationContext remove(String pluginId) {
+        return registry.remove(pluginId);
     }
 
-    public synchronized GenericApplicationContext getByPluginId(String pluginId) {
-        GenericApplicationContext context = registry.get(pluginId);
+    public PluginApplicationContext getByPluginId(String pluginId) {
+        PluginApplicationContext context = registry.get(pluginId);
         if (context == null) {
             throw new IllegalArgumentException(
-                String.format("No corresponding plugin [%s] was found.", pluginId));
+                String.format("The plugin [%s] can not be found.", pluginId));
         }
         return context;
     }

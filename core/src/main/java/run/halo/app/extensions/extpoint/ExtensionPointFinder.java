@@ -11,7 +11,6 @@ import run.halo.app.extensions.SpringPluginManager;
  * @author guqing
  * @since 2021-11-08
  */
-@Component
 public class ExtensionPointFinder {
 
     @SuppressWarnings("rawtypes")

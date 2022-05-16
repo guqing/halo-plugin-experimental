@@ -1,10 +1,9 @@
 package xyz.guqing.plugin.potatoes.service;
 
-import org.springframework.beans.factory.annotation.Autowired;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.support.TransactionTemplate;
 import xyz.guqing.plugin.potatoes.entity.Potato;
-import xyz.guqing.plugin.potatoes.reposiory.PotatoRepository;
 
 /**
  * @author guqing
@@ -12,20 +11,21 @@ import xyz.guqing.plugin.potatoes.reposiory.PotatoRepository;
  */
 @Service
 public class PotatoService {
+    private Map<Integer, Potato> potatosMap = new ConcurrentHashMap<>();
 
-    @Autowired
-    private TransactionTemplate transactionTemplate;
-    @Autowired
-    private PotatoRepository potatoRepository;
-
-    public void create() {
+    public PotatoService() {
         Potato potato = new Potato();
         potato.setId(1);
         potato.setName("zhangsan的番茄");
-        potatoRepository.save(potato);
-//        potatoRepository.findAll();
-//        userRepository.findAll();
-//        personRepository.findAll();
+        potatosMap.put(1, potato);
+    }
 
+    public Potato create(Potato potato) {
+        potatosMap.put(potato.getId(), potato);
+        return potato;
+    }
+
+    public Potato getById(Integer id) {
+        return potatosMap.get(id);
     }
 }
