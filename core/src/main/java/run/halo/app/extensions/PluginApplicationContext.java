@@ -7,6 +7,13 @@ import org.springframework.core.metrics.ApplicationStartup;
 import org.springframework.core.metrics.StartupStep;
 import org.springframework.util.StopWatch;
 
+/**
+ * The generic IOC container for plugins.
+ * The plugin-classes loaded through the same plugin-classloader will be put into the same {@link PluginApplicationContext} for bean creation.
+ *
+ * @author guqing
+ * @since 2.0.0
+ */
 public class PluginApplicationContext extends GenericApplicationContext {
 
     /** Synchronization monitor for the "refresh" and "destroy". */

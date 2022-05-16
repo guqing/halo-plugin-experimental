@@ -10,6 +10,7 @@ pluginManagement {
 rootProject.name = 'halo-plugin-experimental'
 include 'core'
 include 'plugins'
+include 'pluggable-suit'
 include 'plugins:apples'
 findProject(':plugins:apples')?.name = 'apples'
 include 'plugins:potatoes'
