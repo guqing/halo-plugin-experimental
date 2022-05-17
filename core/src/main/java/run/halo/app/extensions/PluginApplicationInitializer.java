@@ -7,6 +7,8 @@ import org.pf4j.PluginWrapper;
 import org.springframework.beans.factory.annotation.AutowiredAnnotationBeanPostProcessor;
 import org.springframework.beans.factory.support.DefaultListableBeanFactory;
 import org.springframework.context.ApplicationContext;
+import org.springframework.context.annotation.AnnotationConfigUtils;
+import org.springframework.context.event.EventListenerMethodProcessor;
 import org.springframework.core.io.DefaultResourceLoader;
 import org.springframework.lang.NonNull;
 import org.springframework.util.Assert;
@@ -50,13 +52,10 @@ public class PluginApplicationInitializer {
         DefaultListableBeanFactory beanFactory =
             (DefaultListableBeanFactory) pluginApplicationContext.getBeanFactory();
 
-        stopWatch.start("创建 AutowiredAnnotationBeanPostProcessor");
-        AutowiredAnnotationBeanPostProcessor autowiredAnnotationBeanPostProcessor =
-            new AutowiredAnnotationBeanPostProcessor();
-        autowiredAnnotationBeanPostProcessor.setBeanFactory(beanFactory);
+        stopWatch.start("registerAnnotationConfigProcessors");
+        AnnotationConfigUtils.registerAnnotationConfigProcessors(beanFactory);
         stopWatch.stop();
 
-        beanFactory.addBeanPostProcessor(autowiredAnnotationBeanPostProcessor);
         stopWatch.start("刷新插件 Application Context");
         pluginApplicationContext.refresh();
         stopWatch.stop();
