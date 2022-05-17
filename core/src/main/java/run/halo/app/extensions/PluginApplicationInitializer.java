@@ -56,10 +56,6 @@ public class PluginApplicationInitializer {
         AnnotationConfigUtils.registerAnnotationConfigProcessors(beanFactory);
         stopWatch.stop();
 
-        stopWatch.start("刷新插件 Application Context");
-        pluginApplicationContext.refresh();
-        stopWatch.stop();
-
         log.debug("Total millis: {} ms -> {}", stopWatch.getTotalTimeMillis(),
             stopWatch.prettyPrint());
 
@@ -90,9 +86,12 @@ public class PluginApplicationInitializer {
         }
         stopWatch.stop();
 
-        System.out.println(
-            "initApplicationContext total millis: " + stopWatch.getTotalTimeMillis() + "ms -> "
-                + stopWatch.prettyPrint());
+        stopWatch.start("刷新插件 Application Context");
+        pluginApplicationContext.refresh();
+        stopWatch.stop();
+
+        log.debug("initApplicationContext total millis: {} ms -> {}",
+            stopWatch.getTotalTimeMillis(), stopWatch.prettyPrint());
     }
 
     public void onStartUp(String pluginId) {
