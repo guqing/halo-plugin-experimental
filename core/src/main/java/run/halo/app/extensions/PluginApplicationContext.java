@@ -1,10 +1,19 @@
 package run.halo.app.extensions;
 
+import java.lang.reflect.Field;
+import java.util.Set;
 import org.springframework.beans.BeansException;
 import org.springframework.beans.factory.config.ConfigurableListableBeanFactory;
+import org.springframework.context.ApplicationEvent;
+import org.springframework.context.PayloadApplicationEvent;
+import org.springframework.context.event.ApplicationEventMulticaster;
+import org.springframework.context.support.AbstractApplicationContext;
 import org.springframework.context.support.GenericApplicationContext;
+import org.springframework.core.ResolvableType;
 import org.springframework.core.metrics.ApplicationStartup;
 import org.springframework.core.metrics.StartupStep;
+import org.springframework.lang.Nullable;
+import org.springframework.util.Assert;
 import org.springframework.util.StopWatch;
 
 /**
@@ -16,7 +25,9 @@ import org.springframework.util.StopWatch;
  */
 public class PluginApplicationContext extends GenericApplicationContext {
 
-    /** Synchronization monitor for the "refresh" and "destroy". */
+    /**
+     * Synchronization monitor for the "refresh" and "destroy".
+     */
     private final Object startupShutdownMonitor = new Object();
     private ApplicationStartup applicationStartup = ApplicationStartup.DEFAULT;
 
@@ -50,7 +61,8 @@ public class PluginApplicationContext extends GenericApplicationContext {
                 stopWatch.stop();
 
                 stopWatch.start("post-process this.applicationStartup.start");
-                StartupStep beanPostProcess = this.applicationStartup.start("spring.context.beans.post-process");
+                StartupStep beanPostProcess =
+                    this.applicationStartup.start("spring.context.beans.post-process");
                 stopWatch.stop();
 
                 stopWatch.start("invokeBeanFactoryPostProcessors");
@@ -93,10 +105,9 @@ public class PluginApplicationContext extends GenericApplicationContext {
                 // Last step: publish corresponding event.
                 finishRefresh();
                 stopWatch.stop();
-                System.out.println("total millis: " + stopWatch.getTotalTimeMillis() + "ms -> " + stopWatch.prettyPrint());
-            }
-
-            catch (BeansException ex) {
+                System.out.println("total millis: " + stopWatch.getTotalTimeMillis() + "ms -> "
+                    + stopWatch.prettyPrint());
+            } catch (BeansException ex) {
                 if (logger.isWarnEnabled()) {
                     logger.warn("Exception encountered during context initialization - " +
                         "cancelling refresh attempt: " + ex);
@@ -110,9 +121,7 @@ public class PluginApplicationContext extends GenericApplicationContext {
 
                 // Propagate exception to caller.
                 throw ex;
-            }
-
-            finally {
+            } finally {
                 // Reset common introspection caches in Spring's core, since we
                 // might not ever need metadata for singleton beans anymore...
                 resetCommonCaches();
@@ -121,5 +130,43 @@ public class PluginApplicationContext extends GenericApplicationContext {
         }
     }
 
+    protected void publishEvent(Object event, @Nullable ResolvableType eventType) {
+        Assert.notNull(event, "Event must not be null");
 
+        // Decorate event as an ApplicationEvent if necessary
+        ApplicationEvent applicationEvent;
+        if (event instanceof ApplicationEvent) {
+            applicationEvent = (ApplicationEvent) event;
+        } else {
+            applicationEvent = new PayloadApplicationEvent<>(this, event);
+            if (eventType == null) {
+                eventType = ((PayloadApplicationEvent<?>) applicationEvent).getResolvableType();
+            }
+        }
+
+        // Multicast right now if possible - or lazily once the multicaster is initialized
+        Set<ApplicationEvent> earlyApplicationEvents = getEarlyApplicationEvents();
+        if (earlyApplicationEvents != null) {
+            earlyApplicationEvents.add(applicationEvent);
+        } else {
+            getApplicationEventMulticaster().multicastEvent(applicationEvent, eventType);
+        }
+    }
+
+    private ApplicationEventMulticaster getApplicationEventMulticaster() {
+        ConfigurableListableBeanFactory beanFactory = getBeanFactory();
+        return beanFactory.getBean(APPLICATION_EVENT_MULTICASTER_BEAN_NAME,
+            ApplicationEventMulticaster.class);
+    }
+
+    public Set<ApplicationEvent> getEarlyApplicationEvents() {
+        try {
+            Field earlyApplicationEventsField =
+                AbstractApplicationContext.class.getDeclaredField("earlyApplicationEvents");
+            return (Set<ApplicationEvent>) earlyApplicationEventsField.get(this);
+        } catch (NoSuchFieldException | IllegalAccessException e) {
+            // ignore this exception
+            return null;
+        }
+    }
 }
