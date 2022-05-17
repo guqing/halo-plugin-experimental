@@ -2,6 +2,7 @@ package run.halo.app.event.post;
 
 import org.springframework.lang.NonNull;
 import org.springframework.util.Assert;
+import run.halo.app.extensions.SharedEvent;
 import run.halo.app.utils.ServiceUtils;
 
 /**
@@ -10,6 +11,7 @@ import run.halo.app.utils.ServiceUtils;
  * @author johnniang
  * @date 19-4-22
  */
+@SharedEvent
 public class PostVisitEvent extends AbstractVisitEvent {
 
     /**

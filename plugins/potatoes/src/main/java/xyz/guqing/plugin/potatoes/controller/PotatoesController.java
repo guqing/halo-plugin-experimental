@@ -6,6 +6,7 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import run.halo.app.extensions.annotation.ExtRestController;
 import xyz.guqing.plugin.potatoes.entity.Potato;
+import xyz.guqing.plugin.potatoes.listener.PotatoesVisitEvent;
 import xyz.guqing.plugin.potatoes.service.PotatoService;
 
 /**
@@ -23,6 +24,7 @@ public class PotatoesController {
 
     @GetMapping("/name")
     public Potato name() {
+        applicationContext.publishEvent(new PotatoesVisitEvent(this));
         return potatoService.getById(1);
     }
 

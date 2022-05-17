@@ -25,6 +25,10 @@ repositories {
 dependencies {
     compileOnly project(':core')
 
+    compileOnly project(':pluggable-suit')
+
+    annotationProcessor project(':pluggable-suit')
+
     compileOnly 'org.springframework.boot:spring-boot-starter-web'
     compileOnly "org.springframework.boot:spring-boot-starter-data-jpa"
     testImplementation 'org.junit.jupiter:junit-jupiter-api:5.7.0'

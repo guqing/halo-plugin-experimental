@@ -19,6 +19,10 @@ jar{
 
 dependencies {
     compileOnly project(':core')
+    compileOnly project(':pluggable-suit')
+
+    annotationProcessor project(':pluggable-suit')
+
     implementation 'org.pf4j:pf4j:3.6.0'
     implementation 'com.alibaba:fastjson:1.2.75'
     compileOnly 'org.springframework.boot:spring-boot-starter-web'

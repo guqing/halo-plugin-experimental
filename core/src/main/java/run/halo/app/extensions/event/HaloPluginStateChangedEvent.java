@@ -3,6 +3,7 @@ package run.halo.app.extensions.event;
 import org.pf4j.PluginState;
 import org.pf4j.PluginWrapper;
 import org.springframework.context.ApplicationEvent;
+import run.halo.app.extensions.SharedEvent;
 
 /**
  * Plugin state changed event.
@@ -10,6 +11,7 @@ import org.springframework.context.ApplicationEvent;
  * @author guqing
  * @date 2021-11-06
  */
+@SharedEvent
 public class HaloPluginStateChangedEvent extends ApplicationEvent {
 
     private final PluginWrapper plugin;
