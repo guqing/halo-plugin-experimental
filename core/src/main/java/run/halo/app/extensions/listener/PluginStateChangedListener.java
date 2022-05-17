@@ -29,24 +29,13 @@ import run.halo.app.extensions.registry.PluginListenerRegistry;
 @ConditionalOnProperty(prefix = PluginProperties.PREFIX, value = "enabled", havingValue = "true")
 public class PluginStateChangedListener {
 
-    @Autowired
-    private PluginListenerRegistry listenerRegistry;
-
     @EventListener(HaloPluginStartedEvent.class)
     public void onPluginStarted(HaloPluginStartedEvent event) {
-        String pluginId = event.getPlugin().getPluginId();
-        List<Class<?>> listenerClasses =
-            ExtensionClassRegistry.getInstance().findClasses(pluginId, ClassDescriptor::isListener);
-        for (Class<?> listenerClass : listenerClasses) {
-            listenerRegistry.addPluginListener(event.getPlugin().getPluginId(), listenerClass);
-        }
-
         log.info("The plugin starts successfully.");
     }
 
     @EventListener(HaloPluginStoppedEvent.class)
     public void onPluginStopped(HaloPluginStoppedEvent event) {
-        listenerRegistry.removePluginListener(event.getPlugin().getPluginId());
         log.info("Plugin {} is stopped", event.getPlugin().getPluginId());
     }
 }

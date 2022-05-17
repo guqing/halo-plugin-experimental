@@ -130,6 +130,15 @@ public class PluginApplicationContext extends GenericApplicationContext {
         }
     }
 
+    /**
+     * 覆盖父类方法中判断context parent不为空时使用parent context广播事件的逻辑。
+     * 如果主应用桥接事件到插件中且设置了parent会导致发布事件时死循环。
+     *
+     * @param event the event to publish (may be an {@link ApplicationEvent}
+     * or a payload object to be turned into a {@link PayloadApplicationEvent})
+     * @param eventType the resolved event type, if known
+     */
+    @Override
     protected void publishEvent(Object event, @Nullable ResolvableType eventType) {
         Assert.notNull(event, "Event must not be null");
 
