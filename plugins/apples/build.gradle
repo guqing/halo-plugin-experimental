@@ -18,11 +18,12 @@ jar{
 }
 
 dependencies {
+    implementation files('lib/echo-hello-1.0.0.jar')
     compileOnly project(':core')
     compileOnly project(':pluggable-suit')
 
     annotationProcessor project(':pluggable-suit')
-
+    implementation 'org.apache.commons:commons-lang3:3.12.0'
     implementation 'org.pf4j:pf4j:3.6.0'
     implementation 'com.alibaba:fastjson:1.2.75'
     compileOnly 'org.springframework.boot:spring-boot-starter-web'

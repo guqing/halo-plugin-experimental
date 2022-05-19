@@ -9,10 +9,10 @@ description = "Halo, An excellent open source blog publishing application."
 sourceCompatibility = JavaVersion.VERSION_11
 
 repositories {
+    mavenLocal()
     maven { url 'https://maven.aliyun.com/repository/public/' }
     maven { url 'https://maven.aliyun.com/repository/spring/' }
     maven { url 'https://repo.spring.io/milestone' }
-    mavenLocal()
     mavenCentral()
     jcenter()
 }
@@ -65,6 +65,7 @@ ext {
 }
 
 dependencies {
+    implementation files('lib/echo-hello-1.1.0.jar')
     implementation project(":pluggable-suit")
     implementation "org.springframework.boot:spring-boot-starter-actuator"
     implementation "org.springframework.boot:spring-boot-starter-data-jpa"

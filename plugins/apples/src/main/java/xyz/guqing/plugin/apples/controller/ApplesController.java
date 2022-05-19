@@ -2,6 +2,7 @@ package xyz.guqing.plugin.apples.controller;
 
 import com.alibaba.fastjson.JSONObject;
 import java.util.List;
+import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -9,6 +10,7 @@ import org.springframework.web.bind.annotation.RestController;
 import run.halo.app.extensions.annotation.ExtRestController;
 import run.halo.app.model.vo.ArchiveYearVO;
 import run.halo.app.service.PostService;
+import xyz.guqing.echo.EchoUtils;
 import xyz.guqing.plugin.apples.service.AppleService;
 
 /**
@@ -26,7 +28,11 @@ public class ApplesController {
 
     @RequestMapping(value = "/name")
     public String name() {
-        return "Malum: " + appleService.getName();
+        System.out.println(EchoUtils.echo());
+        String difference =
+            StringUtils.difference("Don't cry because it is over, smile because it happened.",
+                "because it happened.");
+        return "Malum: " + appleService.getName() + ", 测试相同依赖不同版本共存:" + difference;
     }
 
     @GetMapping("version")
