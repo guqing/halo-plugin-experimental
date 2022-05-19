@@ -157,7 +157,8 @@ public class SpringPluginManager extends DefaultPluginManager
         super.firePluginStateEvent(event);
     }
 
-    private PluginState doStopPlugin(String pluginId, boolean stopDependents) {
+    @Override
+    protected PluginState stopPlugin(String pluginId, boolean stopDependents) {
         checkPluginId(pluginId);
 
         PluginWrapper pluginWrapper = getPlugin(pluginId);
@@ -178,7 +179,7 @@ public class SpringPluginManager extends DefaultPluginManager
             List<String> dependents = dependencyResolver.getDependents(pluginId);
             while (!dependents.isEmpty()) {
                 String dependent = dependents.remove(0);
-                doStopPlugin(dependent, false);
+                stopPlugin(dependent, false);
                 dependents.addAll(0, dependencyResolver.getDependents(dependent));
             }
         }
@@ -255,7 +256,7 @@ public class SpringPluginManager extends DefaultPluginManager
 
     @Override
     public PluginState stopPlugin(String pluginId) {
-        return doStopPlugin(pluginId, true);
+        return stopPlugin(pluginId, true);
     }
 
     private PluginState doStartPlugin(String pluginId) {
@@ -348,7 +349,7 @@ public class SpringPluginManager extends DefaultPluginManager
 
     public PluginState reloadPlugin(String pluginId) {
         PluginWrapper plugin = getPlugin(pluginId);
-        doStopPlugin(pluginId, false);
+        stopPlugin(pluginId, false);
         unloadPlugin(pluginId, false);
         try {
             loadPlugin(plugin.getPluginPath());
