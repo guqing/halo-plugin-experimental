@@ -72,11 +72,11 @@ public class StartedListener implements ApplicationListener<ApplicationStartedEv
 
     @Override
     public void onApplicationEvent(ApplicationStartedEvent event) {
-        try {
-            this.migrate();
-        } catch (SQLException e) {
-            log.error("Failed to migrate database!", e);
-        }
+//        try {
+//            this.migrate();
+//        } catch (SQLException e) {
+//            log.error("Failed to migrate database!", e);
+//        }
         this.initDirectory();
         this.initThemes();
         this.printStartInfo();
