@@ -65,7 +65,6 @@ ext {
 }
 
 dependencies {
-    implementation files('lib/echo-hello-1.1.0.jar')
     implementation project(":pluggable-suit")
     implementation "org.springframework.boot:spring-boot-starter-actuator"
     implementation "org.springframework.boot:spring-boot-starter-data-jpa"
@@ -108,7 +107,7 @@ dependencies {
 
     implementation "kr.pe.kwonnam.freemarker:freemarker-template-inheritance:$templateInheritanceVersion"
     implementation "net.coobird:thumbnailator:$thumbnailatorVersion"
-    implementation "net.sf.image4j:image4j:$image4jVersion"
+//    implementation "net.sf.image4j:image4j:$image4jVersion"
     implementation "org.flywaydb:flyway-core:$flywayVersion"
     implementation "com.google.zxing:core:$zxingVersion"
 

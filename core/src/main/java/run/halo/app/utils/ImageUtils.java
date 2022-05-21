@@ -8,9 +8,7 @@ import javax.imageio.ImageIO;
 import javax.imageio.ImageReader;
 import javax.imageio.stream.ImageInputStream;
 import lombok.extern.slf4j.Slf4j;
-import net.sf.image4j.codec.ico.ICODecoder;
 import org.springframework.lang.NonNull;
-import run.halo.app.exception.ImageFormatException;
 
 /**
  * @author ryanwang
@@ -26,11 +24,8 @@ public class ImageUtils {
         log.debug("Current File type is : [{}]", extension);
 
         if (EXTENSION_ICO.equals(extension)) {
-            try {
-                return ICODecoder.read(is).get(0);
-            } catch (IOException e) {
-                throw new ImageFormatException("ico 文件已损坏", e);
-            }
+            throw new IllegalArgumentException("排除了image4j依赖因此暂不支持使用该方法");
+
         } else {
             return ImageIO.read(is);
         }

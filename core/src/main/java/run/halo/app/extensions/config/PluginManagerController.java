@@ -1,7 +1,6 @@
 package run.halo.app.extensions.config;
 
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -19,7 +18,6 @@ import org.springframework.web.bind.annotation.RestController;
 import run.halo.app.extensions.SpringPluginManager;
 import run.halo.app.extensions.TestExtPoint;
 import run.halo.app.extensions.config.model.PluginInfo;
-import xyz.guqing.echo.EchoUtils;
 
 /**
  * Plugin manager controller.
@@ -38,7 +36,6 @@ public class PluginManagerController {
 
     @GetMapping(value = "${halo.plugin.controller.base-path:/plugins}/list")
     public List<PluginInfo> list() {
-        System.out.println(EchoUtils.echo());
         for (TestExtPoint extension : pluginManager.getExtensions(TestExtPoint.class)) {
             System.out.println("--->" + extension.getName());
         }

@@ -7,10 +7,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
-import run.halo.app.extensions.annotation.ExtRestController;
 import run.halo.app.model.vo.ArchiveYearVO;
 import run.halo.app.service.PostService;
-import xyz.guqing.echo.EchoUtils;
 import xyz.guqing.plugin.apples.service.AppleService;
 
 /**
@@ -28,7 +26,6 @@ public class ApplesController {
 
     @RequestMapping(value = "/name")
     public String name() {
-        System.out.println(EchoUtils.echo());
         String difference =
             StringUtils.difference("Don't cry because it is over, smile because it happened.",
                 "because it happened.");
