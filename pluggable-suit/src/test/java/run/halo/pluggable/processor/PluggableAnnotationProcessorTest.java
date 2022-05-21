@@ -161,10 +161,7 @@ public class PluggableAnnotationProcessorTest {
         Compilation compilation =
             javac().withProcessors(processor).compile(Greeting, WhazzupGreeting);
         assertThat(compilation).succeededWithoutWarnings();
-        Map<String, Set<String>> extensions = new HashMap<>();
-        extensions.put("test.Greeting",
-            new HashSet<>(Collections.singletonList("test.WhazzupGreeting")));
-        assertEquals(extensions, processor.getExtensions());
+        assertEquals(Set.of("test.WhazzupGreeting"), processor.getComponents());
     }
 
     @Test
@@ -173,10 +170,7 @@ public class PluggableAnnotationProcessorTest {
         Compilation compilation = javac().withProcessors(processor)
             .compile(Greeting, SpinnakerExtension, WhazzupGreeting_SpinnakerExtension);
         assertThat(compilation).succeededWithoutWarnings();
-        Map<String, Set<String>> extensions = new HashMap<>();
-        extensions.put("test.Greeting",
-            new HashSet<>(Collections.singletonList("test.WhazzupGreeting")));
-        assertEquals(extensions, processor.getExtensions());
+        assertEquals(Set.of("test.WhazzupGreeting"), processor.getComponents());
     }
 
 }

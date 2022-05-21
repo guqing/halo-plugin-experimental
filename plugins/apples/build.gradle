@@ -18,15 +18,17 @@ jar{
 }
 
 dependencies {
-    implementation files('lib/echo-hello-1.0.0.jar')
-    compileOnly project(':core')
+    implementation project(':core')
     compileOnly project(':pluggable-suit')
-
+//    implementation "net.sf.image4j:image4j:0.7zensight1"
     annotationProcessor project(':pluggable-suit')
     implementation 'org.apache.commons:commons-lang3:3.12.0'
     implementation 'org.pf4j:pf4j:3.6.0'
     implementation 'com.alibaba:fastjson:1.2.75'
     compileOnly 'org.springframework.boot:spring-boot-starter-web'
+    testImplementation("org.springframework.boot:spring-boot-starter-test") {
+        exclude group: 'org.junit.vintage', module: 'junit-vintage-engine'
+    }
     testImplementation 'org.junit.jupiter:junit-jupiter-api:5.7.0'
     testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine:5.7.0'
 }
