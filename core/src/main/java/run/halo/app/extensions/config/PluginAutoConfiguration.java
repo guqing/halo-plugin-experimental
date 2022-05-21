@@ -46,7 +46,6 @@ import run.halo.app.extensions.internal.PluginRequestMappingManager;
 @Slf4j
 @Configuration
 @ConditionalOnClass({PluginManager.class, SpringPluginManager.class})
-@ConditionalOnProperty(prefix = PluginProperties.PREFIX, value = "enabled", havingValue = "true")
 @EnableConfigurationProperties({PluginProperties.class})
 public class PluginAutoConfiguration {
 
