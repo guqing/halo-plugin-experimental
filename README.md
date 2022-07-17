@@ -1,6 +1,7 @@
 # Halo plugin experimental
 [Halo](https://github.com/halo-dev/halo) 博客插件化的功能性探索。
 
+⚠️本仓库的探索已实际应用于 [Halo](https://github.com/halo-dev/halo)，因此本仓库将不再维护，可以参考 [Halo](https://github.com/halo-dev/halo)。
 ## 简介
 插件管理能力位于 [extensions](halo/src/main/java/run/halo/app/extensions) 目录下
 
